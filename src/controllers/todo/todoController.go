@@ -8,19 +8,37 @@ import (
 	todoValidator "todoList/src/utils/validator/todo"
 )
 
-type TodoController struct {
-}
+type TodoController struct{}
 
 var thisService = &todoService.TodoService{}
-func init()  {
-	thisService = new(todoService.TodoService)
+
+func (TodoController) List(request *gin.Context) {
+	response := response.Response{request}
+	var error error
+
+	var form = todoService.QueryForm{"", 0, 10}
+	error = request.ShouldBind(&form)
+	if error != nil {
+		response.ErrorWithMSG("请求失败，请重试")
+		return
+	}
+
+	data, total, error := thisService.List(&form)
+	if error != nil {
+		response.ErrorWithMSG("请求失败，请重试")
+		return
+	}
+
+	responseData := map[string]interface{}{
+		"list":  data,
+		"total": total,
+	}
+
+	response.SuccessWithData(responseData)
+	return
 }
 
-func (TodoController) List(request *gin.Context)  {
-
-}
-
-func (TodoController) Create(request *gin.Context)  {
+func (TodoController) Create(request *gin.Context) {
 	var response = response.Response{request}
 
 	var error error
@@ -38,7 +56,6 @@ func (TodoController) Create(request *gin.Context)  {
 		return
 	}
 
-
 	data, error := thisService.Create(todo)
 	if error != nil {
 		response.ErrorWithMSG("创建失败，请重试")
@@ -48,7 +65,7 @@ func (TodoController) Create(request *gin.Context)  {
 	response.SuccessWithData(data)
 }
 
-func (TodoController) Detail(request *gin.Context)  {
+func (TodoController) Detail(request *gin.Context) {
 	var response = response.Response{request}
 	var error error
 
@@ -68,6 +85,6 @@ func (TodoController) Detail(request *gin.Context)  {
 	response.SuccessWithData(data)
 }
 
-func (TodoController) Update(request *gin.Context)  {
+func (TodoController) Update(request *gin.Context) {
 
 }
