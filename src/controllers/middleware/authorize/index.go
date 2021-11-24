@@ -1,11 +1,11 @@
 package authorize
 
 import (
+	"fmt"
+	"github.com/gin-gonic/gin"
 	"todoList/src/models/user"
 	userService "todoList/src/services/user"
 	"todoList/src/utils/response"
-	"fmt"
-	"github.com/gin-gonic/gin"
 )
 
 

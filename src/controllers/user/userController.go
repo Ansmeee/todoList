@@ -1,12 +1,12 @@
 package user
 
 import (
+	"fmt"
+	"github.com/gin-gonic/gin"
 	userModel "todoList/src/models/user"
 	userService "todoList/src/services/user"
 	"todoList/src/utils/response"
 	userValidator "todoList/src/utils/validator/user"
-	"fmt"
-	"github.com/gin-gonic/gin"
 )
 
 type UserController struct {
@@ -18,7 +18,7 @@ func (UserController) Info(request *gin.Context) {
 	var response = response.Response{request}
 
 	var user userModel.UserModel
-	if err := request.ShouldBindUri(&user); err != nil {
+	if err := request.ShouldBind(&user); err != nil {
 		response.ErrorWithMSG("获取失败：参数错误")
 		return
 	}

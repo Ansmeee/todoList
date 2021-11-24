@@ -16,7 +16,7 @@ func (Validator) Validate(data interface{}, rules Rule) (error error) {
 
 	kd := val.Kind()
 	if kd != reflect.Struct {
-		error = errors.New("expect struct")
+		error = errors.New("无法识别输入的内容")
 		return
 	}
 
