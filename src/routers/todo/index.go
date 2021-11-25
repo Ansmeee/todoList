@@ -8,7 +8,7 @@ import (
 type TodoRouter struct {
 }
 
-func (*TodoRouter) InitTodoRouter(group *gin.RouterGroup) {
+func (*TodoRouter) InitRouter(group *gin.RouterGroup) {
 	//middleware := new(authorize.Authorize)
 	router := group.Group("todo")
 	controller := new(todo.TodoController)

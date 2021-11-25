@@ -9,7 +9,7 @@ import (
 type UserRouter struct {
 }
 
-func (*UserRouter) InitUserRouter(group *gin.RouterGroup) {
+func (*UserRouter) InitRouter(group *gin.RouterGroup) {
 	middleware := new(authorize.Authorize)
 	router := group.Group("user")
 	controller := new(user.UserController)

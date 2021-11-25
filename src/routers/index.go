@@ -2,6 +2,7 @@ package routers
 
 import (
 	"github.com/gin-gonic/gin"
+	"todoList/src/routers/list"
 	"todoList/src/routers/todo"
 	"todoList/src/routers/user"
 )
@@ -10,9 +11,11 @@ import (
 type RouterGroup struct {
 	UserRouter user.UserRouter
 	TodoRouter todo.TodoRouter
+	ListRouter list.ListRouter
 }
 
 func (group *RouterGroup) InitRouter(routerGroup *gin.RouterGroup) {
-	group.UserRouter.InitUserRouter(routerGroup)
-	group.TodoRouter.InitTodoRouter(routerGroup)
+	group.UserRouter.InitRouter(routerGroup)
+	group.TodoRouter.InitRouter(routerGroup)
+	group.ListRouter.InitRouter(routerGroup)
 }
