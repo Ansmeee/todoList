@@ -12,5 +12,7 @@ func (ListRouter) InitRouter(group *gin.RouterGroup)  {
 	controller := new(list.ListController)
 	{
 		router.POST("", controller.Create)
+		router.PUT("/:id", controller.Update)
+		router.DELETE("/:id", controller.Delete)
 	}
 }

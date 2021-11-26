@@ -8,6 +8,7 @@ import (
 
 type ListService struct {}
 var model = &list.ListModel{}
+var service = &ListService{}
 
 func (ListService) NewModel() *list.ListModel {
 	return new(list.ListModel)
@@ -17,6 +18,7 @@ func (ListService) FindByID(id uint) (list *list.ListModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
+	list = service.NewModel()
 	error = db.Model(model).Find(list, id).Error
 	if error != nil {
 		return
