@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 8.0.27)
 # Database: demo
-# Generation Time: 2021-12-08 09:25:06 +0000
+# Generation Time: 2021-12-08 10:02:37 +0000
 # ************************************************************
 
 
@@ -46,7 +46,7 @@ LOCK TABLES `list` WRITE;
 
 INSERT INTO `list` (`id`, `uid`, `title`, `type`, `hide`, `color`, `create_id`, `created_at`, `updated_at`, `deleted_at`)
 VALUES
-	(1,'1e3bc83e58ad3d1bffc52ea2f8dca499','这是一个测试任务','',0,'1',0,'2021-12-08 14:28:13','2021-12-08 14:28:13',NULL),
+	(1,'1e3bc83e58ad3d1bffc52ea2f8dca499','这是一个测试任务','任务清单',0,'1',0,'2021-12-08 14:28:13','2021-12-08 17:57:50',NULL),
 	(2,'ff6218b87c65fc8515a3ec95e38d6f78','测试任务','任务清单',1,'212321',0,'2021-12-08 14:29:13','2021-12-08 15:16:22',NULL);
 
 /*!40000 ALTER TABLE `list` ENABLE KEYS */;
@@ -60,22 +60,34 @@ DROP TABLE IF EXISTS `todo`;
 
 CREATE TABLE `todo` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `uid` varchar(255) NOT NULL DEFAULT '' COMMENT 'uid',
   `title` varchar(100) NOT NULL COMMENT '标题',
   `type` varchar(10) NOT NULL DEFAULT '' COMMENT '类型',
   `content` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '内容',
-  `list_id` int NOT NULL DEFAULT '0' COMMENT '分类ID',
+  `list_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '分类ID',
   `parent_id` int NOT NULL DEFAULT '0' COMMENT '父级任务ID',
   `user_id` int NOT NULL DEFAULT '0' COMMENT '用户ID',
   `priority` tinyint(1) NOT NULL DEFAULT '0' COMMENT '优先级',
   `status` varchar(10) NOT NULL DEFAULT '' COMMENT '状态',
   `top` int NOT NULL DEFAULT '0' COMMENT '置顶',
-  `deadline` timestamp NULL DEFAULT NULL COMMENT '截止日期',
+  `deadline` varchar(255) NOT NULL DEFAULT '' COMMENT '截止日期',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建日期',
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改日期',
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
+LOCK TABLES `todo` WRITE;
+/*!40000 ALTER TABLE `todo` DISABLE KEYS */;
+
+INSERT INTO `todo` (`id`, `uid`, `title`, `type`, `content`, `list_id`, `parent_id`, `user_id`, `priority`, `status`, `top`, `deadline`, `created_at`, `updated_at`, `deleted_at`)
+VALUES
+	(1,'c58abf4a1c16873026d9fec2a9b35ba6','这周要写周报','','','1e3bc83e58ad3d1bffc52ea2f8dca499',0,0,0,'',0,'','2021-12-08 17:53:27','2021-12-08 17:53:27',NULL),
+	(2,'fb63db680f3862d9d0e138f5c3fa7d96','这周要写周报','','别忘了写周报','1e3bc83e58ad3d1bffc52ea2f8dca499',0,0,0,'',0,'','2021-12-08 17:57:37','2021-12-08 17:57:37',NULL),
+	(3,'05662db776907f7215c86d2f4bbcf61a','这周要写周报','任务清单','别忘了写周报','1e3bc83e58ad3d1bffc52ea2f8dca499',0,0,0,'',0,'','2021-12-08 17:57:53','2021-12-08 17:57:53',NULL);
+
+/*!40000 ALTER TABLE `todo` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table user
