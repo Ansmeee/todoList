@@ -105,7 +105,7 @@ func (TodoController) Detail(request *gin.Context) {
 }
 
 func (TodoController) Update(request *gin.Context) {
-
+	
 }
 
 func (TodoController) Delete(request *gin.Context)  {
@@ -113,7 +113,7 @@ func (TodoController) Delete(request *gin.Context)  {
 	var error error
 
 	form := thisService.NewModel()
-	error = request.ShouldBind(form)
+	error = request.ShouldBindUri(form)
 	if error != nil {
 		response.ErrorWithMSG("删除失败")
 		return
