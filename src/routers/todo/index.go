@@ -13,9 +13,10 @@ func (*TodoRouter) InitRouter(group *gin.RouterGroup) {
 	router := group.Group("todo")
 	controller := new(todo.TodoController)
 	{
-		router.GET("list", controller.List)
 		router.POST("", controller.Create)
-		router.GET("", controller.Detail)
 		router.PUT("", controller.Update)
+		router.GET("/:id", controller.Detail)
+		router.DELETE("/:id", controller.Delete)
+		router.GET("", controller.List)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type mySQLConnection struct {
@@ -16,7 +17,9 @@ type mySQLConnection struct {
 
 func Connect(dbname string) (db *gorm.DB, error error)  {
 	dsn := fmt.Sprintf("dev:dev007@tcp(127.0.0.1:3306)/demo?charset=utf8mb4&parseTime=True&loc=Local")
-	db, error = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, error = gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger:logger.Default.LogMode(logger.Info),
+	})
 
 	return
 }

@@ -101,7 +101,7 @@ func (UserController) SignUp(request *gin.Context) {
 
 	err, existUser := service.FindeByEmail(form.Email)
 	fmt.Println(existUser)
-	if err != nil || existUser.Id > 0 {
+	if err != nil || len(existUser.Id) > 0 {
 		response.ErrorWithMSG(fmt.Sprintf("验证失败：无法注册该账号"))
 		return
 	}

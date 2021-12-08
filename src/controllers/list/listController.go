@@ -11,6 +11,31 @@ import (
 type ListController struct {}
 var service = new(list.ListService)
 
+func (ListController) List(request *gin.Context)  {
+	response := response.Response{request}
+	var error error
+
+	form := new(list.Params)
+	error = request.ShouldBind(form)
+	if error != nil {
+		response.ErrorWithMSG("获取失败了，再试一次吧")
+		return
+	}
+
+	total, data, error := service.List(form)
+	if error != nil {
+		response.ErrorWithMSG("获取失败了，再试一次吧")
+		return
+	}
+
+	responseData := map[string]interface{}{
+		"total": total,
+		"list":  data,
+	}
+
+	response.SuccessWithData(responseData)
+}
+
 func (ListController) Create(request *gin.Context) {
 	response := response.Response{request}
 	var error error
@@ -44,6 +69,13 @@ func (ListController) Update(request *gin.Context)  {
 	var error error
 
 	data := service.NewModel()
+
+	error = request.ShouldBindUri(data)
+	if error != nil {
+		response.ErrorWithMSG("保存失败了，再试一次吧")
+		return
+	}
+
 	error = request.ShouldBind(data)
 	if error != nil {
 		response.ErrorWithMSG("保存失败了，再试一次吧")
@@ -90,7 +122,6 @@ func (ListController) Delete(request *gin.Context)  {
 	}
 
 	error = service.Delete(list)
-
 	if error != nil {
 		response.ErrorWithMSG("删除失败")
 		return

@@ -30,7 +30,7 @@ func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error err
 	return
 }
 
-func (TodoService) FindByID(id uint) (data todo.TodoModel, error error) {
+func (TodoService) FindByID(id string) (data todo.TodoModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 

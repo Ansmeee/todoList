@@ -2,15 +2,15 @@ package user
 
 import (
 	"context"
-	"todoList/src/models/user"
-	"todoList/src/utils/database"
-	"todoList/src/utils/redis"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
 	"strings"
 	"time"
+	"todoList/src/models/user"
+	"todoList/src/utils/database"
+	"todoList/src/utils/redis"
 )
 
 type UserService struct{}
@@ -56,7 +56,7 @@ func (service *UserService) FindeByEmail(email string) (error error, data user.U
 	return
 }
 
-func (service *UserService) FindByID(id uint) (error error, data user.UserModel) {
+func (service *UserService) FindByID(id string) (error error, data user.UserModel) {
 	client := redis.Connect()
 	defer redis.Close(client)
 
@@ -105,7 +105,7 @@ func (service *UserService) SignIn(data *SigninForm) (token string, error error)
 		 return
 	}
 
-	if userInfo.Id == 0 {
+	if userInfo.Id == "" {
 		error = errors.New("用户信息异常")
 		return
 	}

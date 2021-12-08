@@ -88,3 +88,7 @@ func (TodoController) Detail(request *gin.Context) {
 func (TodoController) Update(request *gin.Context) {
 
 }
+
+func (TodoController) Delete(request *gin.Context)  {
+
+}

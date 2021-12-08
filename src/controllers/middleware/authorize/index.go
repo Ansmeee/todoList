@@ -27,7 +27,7 @@ func (Authorize) Auth(request *gin.Context)  {
 		return
 	}
 
-	if userInfo.Id == 0 {
+	if userInfo.Id == "" {
 		fmt.Println("check userInfo 失败")
 		response.ErrorWithMSG("获取失败：用户信息异常")
 		request.Abort()
