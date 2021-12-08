@@ -84,9 +84,14 @@ func (TodoController) Detail(request *gin.Context) {
 	var error error
 
 	todo := thisService.NewModel()
-	error = request.ShouldBind(todo)
+	error = request.ShouldBindUri(todo)
 	if error != nil {
 		response.ErrorWithMSG("获取失败，请重试")
+		return
+	}
+
+	if todo.Id == "" {
+		response.ErrorWithMSG("获取失败")
 		return
 	}
 
@@ -104,7 +109,30 @@ func (TodoController) Update(request *gin.Context) {
 }
 
 func (TodoController) Delete(request *gin.Context)  {
+	response := response.Response{request}
+	var error error
 
+	form := thisService.NewModel()
+	error = request.ShouldBind(form)
+	if error != nil {
+		response.ErrorWithMSG("删除失败")
+		return
+	}
+
+	todo, error := thisService.FindByID(form.Id)
+	if error !=nil {
+		response.ErrorWithMSG("删除失败")
+		return
+	}
+
+	error = thisService.Delete(todo)
+	if error != nil {
+		response.ErrorWithMSG("删除失败")
+		return
+	}
+
+	response.Success()
+	return
 }
 
 func (TodoController) Item(request *gin.Context)  {

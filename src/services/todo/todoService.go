@@ -2,8 +2,6 @@ package todo
 
 import (
 	"context"
-	"errors"
-	"gorm.io/gorm"
 	"todoList/src/models/todo"
 	"todoList/src/services/common"
 	"todoList/src/utils/database"
@@ -12,7 +10,8 @@ import (
 type TodoService struct{}
 
 var ctx = context.Background()
-var Model = &todo.TodoModel{}
+var model = &todo.TodoModel{}
+var service = &TodoService{}
 
 func (TodoService) NewModel() *todo.TodoModel {
 	return new(todo.TodoModel)
@@ -28,7 +27,7 @@ func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error err
 	}
 
 	data.Id = uid
-	error = db.Model(Model).Create(data).Error
+	error = db.Model(model).Create(data).Error
 	if error != nil {
 		return
 	}
@@ -37,16 +36,13 @@ func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error err
 	return
 }
 
-func (TodoService) FindByID(id string) (data todo.TodoModel, error error) {
+func (TodoService) FindByID(id string) (todo *todo.TodoModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
-	error = db.Model(Model).First(&data, id).Error
+	todo = service.NewModel()
+	error = db.Model(model).Where("uid = ?", id).Find(todo).Error
 	if error != nil {
-		if errors.Is(error, gorm.ErrRecordNotFound) {
-			error = errors.New("该记录不存在")
-		}
-
 		return
 	}
 
@@ -63,7 +59,7 @@ func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, er
 	db := database.Connect("")
 	defer database.Close(db)
 
-	db = db.Model(Model)
+	db = db.Model(model)
 	if len(form.Keywords) > 0 {
 		db = db.Where("title like ?", "%" + form.Keywords + "%")
 	}
@@ -76,6 +72,18 @@ func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, er
 	limit := form.PageSize
 	offset := (form.Page - 1) * limit
 	error = db.Limit(limit).Offset(offset).Find(&data).Error
+	if error != nil {
+		return
+	}
+
+	return
+}
+
+func (TodoService) Delete(todo *todo.TodoModel) (error error)  {
+	db := database.Connect("")
+	defer database.Close(db)
+
+	error = db.Model(model).Where("uid = ?", todo.Id).Delete(todo).Error
 	if error != nil {
 		return
 	}

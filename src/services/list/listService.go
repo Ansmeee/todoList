@@ -20,7 +20,7 @@ func (ListService) FindByID(id string) (list *list.ListModel, error error) {
 	defer database.Close(db)
 
 	list = service.NewModel()
-	error = db.Model(model).Where("uid = ?", id).Find(list).Limit(1).Error
+	error = db.Model(model).Where("uid = ?", id).Find(list).Error
 	if error != nil {
 		return
 	}
