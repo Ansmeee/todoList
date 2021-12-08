@@ -3,6 +3,7 @@ package todo
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"todoList/src/services/list"
 	todoService "todoList/src/services/todo"
 	"todoList/src/utils/response"
 	todoValidator "todoList/src/utils/validator/todo"
@@ -11,6 +12,7 @@ import (
 type TodoController struct{}
 
 var thisService = &todoService.TodoService{}
+var listService = &list.ListService{}
 
 func (TodoController) List(request *gin.Context) {
 	response := response.Response{request}
@@ -50,12 +52,24 @@ func (TodoController) Create(request *gin.Context) {
 	}
 
 	validator := new(todoValidator.TodoValidator)
-	error = validator.Validate(todo, todoValidator.TodoCreateRules)
+	error = validator.Validate(*todo, todoValidator.TodoCreateRules)
 	if error != nil {
 		response.ErrorWithMSG(fmt.Sprintf("创建失败: %s", error.Error()))
 		return
 	}
 
+	list, error := listService.FindByID(todo.ListId)
+	if error != nil {
+		response.ErrorWithMSG("创建失败，请重试")
+		return
+	}
+
+	if len(list.Id) == 0 {
+		response.ErrorWithMSG("创建失败，请重试")
+		return
+	}
+
+	todo.Type = list.Type
 	data, error := thisService.Create(todo)
 	if error != nil {
 		response.ErrorWithMSG("创建失败，请重试")
@@ -90,5 +104,9 @@ func (TodoController) Update(request *gin.Context) {
 }
 
 func (TodoController) Delete(request *gin.Context)  {
+
+}
+
+func (TodoController) Item(request *gin.Context)  {
 
 }

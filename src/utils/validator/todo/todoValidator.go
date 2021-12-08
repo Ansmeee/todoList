@@ -6,4 +6,4 @@ type TodoValidator struct {
 	validator.Validator
 }
 
-var TodoCreateRules = validator.Rule{"Title": "required;string", "Type": "required;string"}
+var TodoCreateRules = validator.Rule{"Title": "required;string", "ListId": "required"}

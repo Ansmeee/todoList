@@ -5,6 +5,7 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"todoList/src/models/todo"
+	"todoList/src/services/common"
 	"todoList/src/utils/database"
 )
 
@@ -21,6 +22,12 @@ func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error err
 	db := database.Connect("")
 	defer database.Close(db)
 
+	uid, error := common.GetUID()
+	if error != nil {
+		return
+	}
+
+	data.Id = uid
 	error = db.Model(Model).Create(data).Error
 	if error != nil {
 		return
