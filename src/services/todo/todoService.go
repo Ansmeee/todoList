@@ -21,10 +21,7 @@ func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error err
 	db := database.Connect("")
 	defer database.Close(db)
 
-	uid, error := common.GetUID()
-	if error != nil {
-		return
-	}
+	uid := common.GetUID("todoUID")
 
 	data.Id = uid
 	error = db.Model(model).Create(data).Error
@@ -54,9 +51,13 @@ func (TodoService) Update(todo *todo.TodoModel, data *UpdateForm) (error error) 
 	return
 }
 
-func (TodoService) UpdateAttr(todo *todo.TodoModel, attrName, attrValue string) (error error)  {
+func (TodoService) UpdateAttr(todo *todo.TodoModel, attrName string, attrValue interface{}) (error error)  {
 	db := database.Connect("")
 	defer database.Close(db)
+
+	if attrName == "top" && attrValue == "1" {
+		attrValue = common.Incr("top")
+	}
 
 	error = db.Model(todo).Where("uid = ?", todo.Id).Update(attrName, attrValue).Error
 	return

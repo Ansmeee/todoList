@@ -67,11 +67,7 @@ func (ListService) Create(list *list.ListModel) (data *list.ListModel, error err
 	db := database.Connect("")
 	defer database.Close(db)
 
-	list.Id, error = common.GetUID()
-	if error != nil {
-		return
-	}
-
+	list.Id = common.GetUID("listUID")
 	error = db.Model(model).Create(list).Error
 	if error != nil {
 		return

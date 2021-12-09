@@ -4,22 +4,27 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"strconv"
 	redis "todoList/src/utils/redis"
 )
 
 var ctx = context.Background()
-func GetUID() (uid string, error error) {
+func GetUID(name string) (uid string) {
 	client := redis.Connect()
 	defer redis.Close(client)
 
-	id := client.Incr(ctx, "uid").String()
-	fmt.Println(id)
-
-	if error != nil {
-		return
-	}
-
-	data := []byte(id)
+	result, _ := client.Incr(ctx, name).Result()
+	id := int(result)
+	data := []byte(strconv.Itoa(id))
 	uid = fmt.Sprintf("%x", md5.Sum(data))
+	return
+}
+
+func Incr(name string) (id int)  {
+	client := redis.Connect()
+	defer redis.Close(client)
+
+	result, _ := client.Incr(ctx, name).Result()
+	id = int(result)
 	return
 }
