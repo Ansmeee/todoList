@@ -36,12 +36,31 @@ func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error err
 	return
 }
 
+type UpdateForm struct {
+	Id      string `json:"id" form:"id"`
+	Title   string `json:"title" form:"title"`
+	Content string `json:"content" form:"content"`
+}
+
+func (TodoService) Update(todo *todo.TodoModel, data *UpdateForm) (error error) {
+	db := database.Connect("")
+	defer database.Close(db)
+
+	updateData := map[string]interface{}{
+		"title":   data.Title,
+		"content": data.Content,
+	}
+
+	error = db.Model(todo).Where("uid = ?", data.Id).Updates(updateData).Error
+	return
+}
+
 func (TodoService) FindByID(id string) (todo *todo.TodoModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
 	todo = service.NewModel()
-	error = db.Model(model).Where("uid = ?", id).Find(todo).Error
+	error = db.Where("uid = ?", id).Find(todo).Error
 	if error != nil {
 		return
 	}
@@ -61,7 +80,7 @@ func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, er
 
 	db = db.Model(model)
 	if len(form.Keywords) > 0 {
-		db = db.Where("title like ?", "%" + form.Keywords + "%")
+		db = db.Where("title like ?", "%"+form.Keywords+"%")
 	}
 
 	db.Count(&total)
@@ -79,7 +98,7 @@ func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, er
 	return
 }
 
-func (TodoService) Delete(todo *todo.TodoModel) (error error)  {
+func (TodoService) Delete(todo *todo.TodoModel) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
