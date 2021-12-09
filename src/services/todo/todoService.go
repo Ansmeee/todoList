@@ -37,11 +37,10 @@ func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error err
 }
 
 type UpdateForm struct {
-	Id      string `json:"id" form:"id"`
-	Title   string `json:"title" form:"title"`
-	Content string `json:"content" form:"content"`
+	Id      string `form:"id"`
+	Title   string `form:"title"`
+	Content string `form:"content"`
 }
-
 func (TodoService) Update(todo *todo.TodoModel, data *UpdateForm) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
@@ -52,6 +51,14 @@ func (TodoService) Update(todo *todo.TodoModel, data *UpdateForm) (error error) 
 	}
 
 	error = db.Model(todo).Where("uid = ?", data.Id).Updates(updateData).Error
+	return
+}
+
+func (TodoService) UpdateAttr(todo *todo.TodoModel, attrName, attrValue string) (error error)  {
+	db := database.Connect("")
+	defer database.Close(db)
+
+	error = db.Model(todo).Where("uid = ?", todo.Id).Update(attrName, attrValue).Error
 	return
 }
 
@@ -73,7 +80,6 @@ type QueryForm struct {
 	Page     int    `json:"page" form:"page"`
 	PageSize int    `json:"page_size" form:"page_size"`
 }
-
 func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
@@ -102,7 +108,7 @@ func (TodoService) Delete(todo *todo.TodoModel) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
-	error = db.Model(model).Where("uid = ?", todo.Id).Delete(todo).Error
+	error = db.Where("uid = ?", todo.Id).Delete(todo).Error
 	if error != nil {
 		return
 	}

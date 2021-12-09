@@ -18,6 +18,6 @@ func (*TodoRouter) InitRouter(group *gin.RouterGroup) {
 		router.PUT("", controller.Update)
 		router.GET("/:id", controller.Detail)
 		router.DELETE("/:id", controller.Delete)
-		router.PUT("item", controller.Item)
+		router.PUT("attr", controller.UpdateAttr)
 	}
 }

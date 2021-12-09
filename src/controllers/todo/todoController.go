@@ -126,7 +126,7 @@ func (TodoController) Update(request *gin.Context) {
 	return
 }
 
-func (TodoController) Delete(request *gin.Context)  {
+func (TodoController) Delete(request *gin.Context) {
 	response := response.Response{request}
 	var error error
 
@@ -138,7 +138,7 @@ func (TodoController) Delete(request *gin.Context)  {
 	}
 
 	todo, error := thisService.FindByID(form.Id)
-	if error !=nil {
+	if error != nil {
 		response.ErrorWithMSG("删除失败")
 		return
 	}
@@ -153,6 +153,43 @@ func (TodoController) Delete(request *gin.Context)  {
 	return
 }
 
-func (TodoController) Item(request *gin.Context)  {
+type AttrForm struct {
+	Id    string `form:"id"`
+	Name  string `form:"name"`
+	Value string `form:"value"`
+}
 
+func (TodoController) UpdateAttr(request *gin.Context) {
+	response := response.Response{request}
+	var error error
+
+	attrForm := new(AttrForm)
+	error = request.ShouldBind(attrForm)
+	if error != nil {
+		response.ErrorWithMSG("保存失败")
+		return
+	}
+
+	attrName := attrForm.Name
+	attrValue := attrForm.Value
+
+	todo, error := thisService.FindByID(attrForm.Id)
+	if error != nil || todo.Id == "" {
+		response.ErrorWithMSG("保存失败")
+		return
+	}
+
+	if "" == attrName {
+		response.ErrorWithMSG("保存失败")
+		return
+	}
+
+	error = thisService.UpdateAttr(todo, attrName, attrValue)
+	if error != nil {
+		response.ErrorWithMSG("保存失败")
+		return
+	}
+
+	response.SuccessWithData(*todo)
+	return
 }
