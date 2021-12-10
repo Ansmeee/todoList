@@ -10,11 +10,7 @@ import (
 
 var ctx = context.Background()
 func GetUID(name string) (uid string) {
-	client := redis.Connect()
-	defer redis.Close(client)
-
-	result, _ := client.Incr(ctx, name).Result()
-	id := int(result)
+	id := Incr(name)
 	data := []byte(strconv.Itoa(id))
 	uid = fmt.Sprintf("%x", md5.Sum(data))
 	return
