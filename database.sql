@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 8.0.27)
 # Database: demo
-# Generation Time: 2021-12-08 10:02:37 +0000
+# Generation Time: 2021-12-17 10:12:33 +0000
 # ************************************************************
 
 
@@ -46,7 +46,7 @@ LOCK TABLES `list` WRITE;
 
 INSERT INTO `list` (`id`, `uid`, `title`, `type`, `hide`, `color`, `create_id`, `created_at`, `updated_at`, `deleted_at`)
 VALUES
-	(1,'1e3bc83e58ad3d1bffc52ea2f8dca499','这是一个测试任务','任务清单',0,'1',0,'2021-12-08 14:28:13','2021-12-08 17:57:50',NULL),
+	(1,'1e3bc83e58ad3d1bffc52ea2f8dca499','运动打卡','任务清单',1,'212321',0,'2021-12-08 14:28:13','2021-12-17 17:11:06',NULL),
 	(2,'ff6218b87c65fc8515a3ec95e38d6f78','测试任务','任务清单',1,'212321',0,'2021-12-08 14:29:13','2021-12-08 15:16:22',NULL);
 
 /*!40000 ALTER TABLE `list` ENABLE KEYS */;
@@ -67,8 +67,9 @@ CREATE TABLE `todo` (
   `list_id` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '分类ID',
   `parent_id` int NOT NULL DEFAULT '0' COMMENT '父级任务ID',
   `user_id` int NOT NULL DEFAULT '0' COMMENT '用户ID',
+  `tags` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL COMMENT '标签',
   `priority` tinyint(1) NOT NULL DEFAULT '0' COMMENT '优先级',
-  `status` varchar(10) NOT NULL DEFAULT '' COMMENT '状态',
+  `status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '状态',
   `top` int NOT NULL DEFAULT '0' COMMENT '置顶',
   `deadline` varchar(255) NOT NULL DEFAULT '' COMMENT '截止日期',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建日期',
@@ -80,11 +81,13 @@ CREATE TABLE `todo` (
 LOCK TABLES `todo` WRITE;
 /*!40000 ALTER TABLE `todo` DISABLE KEYS */;
 
-INSERT INTO `todo` (`id`, `uid`, `title`, `type`, `content`, `list_id`, `parent_id`, `user_id`, `priority`, `status`, `top`, `deadline`, `created_at`, `updated_at`, `deleted_at`)
+INSERT INTO `todo` (`id`, `uid`, `title`, `type`, `content`, `list_id`, `parent_id`, `user_id`, `tags`, `priority`, `status`, `top`, `deadline`, `created_at`, `updated_at`, `deleted_at`)
 VALUES
-	(1,'c58abf4a1c16873026d9fec2a9b35ba6','这周要写周报','','','1e3bc83e58ad3d1bffc52ea2f8dca499',0,0,0,'',0,'','2021-12-08 17:53:27','2021-12-08 17:53:27',NULL),
-	(2,'fb63db680f3862d9d0e138f5c3fa7d96','这周要写周报','','别忘了写周报','1e3bc83e58ad3d1bffc52ea2f8dca499',0,0,0,'',0,'','2021-12-08 17:57:37','2021-12-08 17:57:37',NULL),
-	(3,'05662db776907f7215c86d2f4bbcf61a','这周要写周报','任务清单','别忘了写周报','1e3bc83e58ad3d1bffc52ea2f8dca499',0,0,0,'',0,'','2021-12-08 17:57:53','2021-12-08 17:57:53',NULL);
+	(1,'c58abf4a1c16873026d9fec2a9b35ba6','记得写周报','任务清单','高达dasd发发大水','1e3bc83e58ad3d1bffc52ea2f8dca499',0,0,'a,b,c',0,0,10,'2021-12-15','2021-12-08 17:53:27','2021-12-17 17:58:01',NULL),
+	(2,'fb63db680f3862d9d0e138f5c3fa7d96','自助查询，频控查询，增加分类频次分布','','别忘了写周报','1e3bc83e58ad3d1bffc52ea2f8dca499',0,0,'a',1,1,0,'2021-12-18','2021-12-08 17:57:37','2021-12-17 17:57:59',NULL),
+	(3,'05662db776907f7215c86d2f4bbcf61a','客户反馈频次过高（即：一个用户看了他们的广告多次）时，内部策略优化同学（杨冰组）会根据频次来调整投放策略；不同场景下，频次分布数据的查询条件不同，沟通成本高；客户反馈频次过高（即：一个用户看了他们的广','任务清单','别忘了写周报','1e3bc83e58ad3d1bffc52ea2f8dca499',0,0,'d',2,2,0,'2021-12-20','2021-12-08 17:57:53','2021-12-17 17:58:03',NULL),
+	(5,'c4ca4238a0b923820dcc509a6f75849b','记得写周报','任务清单','高达dasd发发大水','1e3bc83e58ad3d1bffc52ea2f8dca499',0,0,'c',3,2,0,'2021-12-25','2021-12-09 15:21:59','2021-12-17 17:58:03',NULL),
+	(6,'c81e728d9d4c2f636f067f89cc14862c','运动计划','','','',0,0,'',3,0,0,'2021-12-30','2021-12-17 17:23:00','2021-12-17 17:57:56',NULL);
 
 /*!40000 ALTER TABLE `todo` ENABLE KEYS */;
 UNLOCK TABLES;
