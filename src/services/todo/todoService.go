@@ -2,6 +2,7 @@ package todo
 
 import (
 	"context"
+	"fmt"
 	"todoList/src/models/todo"
 	"todoList/src/services/common"
 	"todoList/src/utils/database"
@@ -38,6 +39,7 @@ type UpdateForm struct {
 	Title   string `form:"title"`
 	Content string `form:"content"`
 }
+
 func (TodoService) Update(todo *todo.TodoModel, data *UpdateForm) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
@@ -51,7 +53,7 @@ func (TodoService) Update(todo *todo.TodoModel, data *UpdateForm) (error error) 
 	return
 }
 
-func (TodoService) UpdateAttr(todo *todo.TodoModel, attrName string, attrValue interface{}) (error error)  {
+func (TodoService) UpdateAttr(todo *todo.TodoModel, attrName string, attrValue interface{}) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
@@ -77,10 +79,15 @@ func (TodoService) FindByID(id string) (todo *todo.TodoModel, error error) {
 }
 
 type QueryForm struct {
-	Keywords string `json:"keywords" form:"keywords"`
-	Page     int    `json:"page" form:"page"`
-	PageSize int    `json:"page_size" form:"page_size"`
+	Keywords  string   `json:"keywords" form:"keywords"`
+	Page      int      `json:"page" form:"page"`
+	PageSize  int      `json:"page_size" form:"page_size"`
+	SortBy    string   `json:"sort_by" form:"sort_by"`
+	SortOrder string   `json:"sort_order" form:"sort_order"`
+	Rules     []string `json:"rules" form:"rules"`
+	Wheres    [][]string
 }
+
 func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
@@ -90,9 +97,19 @@ func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, er
 		db = db.Where("title like ?", "%"+form.Keywords+"%")
 	}
 
+	if len(form.Wheres) > 0 {
+		for _, where := range form.Wheres {
+			db = db.Where("? ? ?", where[0], where[1], where[2])
+		}
+	}
+
 	db.Count(&total)
 	if total == 0 {
 		return
+	}
+
+	if form.SortBy != "" && form.SortOrder != "" {
+		db = db.Order(fmt.Sprintf("%s %s", form.SortBy, form.SortOrder))
 	}
 
 	limit := form.PageSize

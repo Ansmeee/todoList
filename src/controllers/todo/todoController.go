@@ -18,11 +18,34 @@ func (TodoController) List(request *gin.Context) {
 	response := response.Response{request}
 	var error error
 
-	var form = todoService.QueryForm{"", 0, 10}
-	error = request.ShouldBind(&form)
+	var form = todoService.QueryForm{"", 0, 10, "created_at", "desc", nil, nil}
+	error = request.ShouldBindQuery(&form)
 	if error != nil {
 		response.ErrorWithMSG("请求失败，请重试")
 		return
+	}
+
+	fmt.Println(form)
+
+	if len(form.Rules) > 0 {
+		var newRules [][]string
+		for _, rule := range form.Rules {
+			fmt.Println(rule)
+			val := ""
+			opt := "="
+			if rule == "priority" {
+				val = "高"
+			}
+
+			if rule == "status" {
+				opt = "<>"
+				val = "已完成"
+			}
+
+			newRules = append(newRules, []string{rule, opt, val})
+		}
+
+		form.Wheres = newRules
 	}
 
 	data, total, error := thisService.List(&form)
@@ -58,18 +81,21 @@ func (TodoController) Create(request *gin.Context) {
 		return
 	}
 
-	list, error := listService.FindByID(todo.ListId)
-	if error != nil {
-		response.ErrorWithMSG("创建失败，请重试")
-		return
+	if len(todo.ListId) > 0 {
+		list, error := listService.FindByID(todo.ListId)
+		if error != nil {
+			response.ErrorWithMSG("创建失败，请重试")
+			return
+		}
+
+		if len(list.Id) == 0 {
+			response.ErrorWithMSG("创建失败，请重试")
+			return
+		}
+
+		todo.Type = list.Type
 	}
 
-	if len(list.Id) == 0 {
-		response.ErrorWithMSG("创建失败，请重试")
-		return
-	}
-
-	todo.Type = list.Type
 	data, error := thisService.Create(todo)
 	if error != nil {
 		response.ErrorWithMSG("创建失败，请重试")
