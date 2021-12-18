@@ -18,8 +18,8 @@ func (TodoController) List(request *gin.Context) {
 	response := response.Response{request}
 	var error error
 
-	var form = todoService.QueryForm{"", 0, 10, "created_at", "desc", nil, nil}
-	error = request.ShouldBindQuery(&form)
+	var form = new(todoService.QueryForm)
+	error = request.ShouldBindQuery(form)
 	if error != nil {
 		response.ErrorWithMSG("请求失败，请重试")
 		return
@@ -48,7 +48,7 @@ func (TodoController) List(request *gin.Context) {
 		form.Wheres = newRules
 	}
 
-	data, total, error := thisService.List(&form)
+	data, total, error := thisService.List(form)
 	if error != nil {
 		response.ErrorWithMSG("请求失败，请重试")
 		return
