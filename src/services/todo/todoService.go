@@ -35,9 +35,11 @@ func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error err
 }
 
 type UpdateForm struct {
-	Id      string `form:"id"`
-	Title   string `form:"title"`
-	Content string `form:"content"`
+	Id       string `form:"id"`
+	Title    string `form:"title"`
+	Content  string `form:"content"`
+	Priority int    `form:"priority"`
+	Deadline string `form:"deadline"`
 }
 
 func (TodoService) Update(todo *todo.TodoModel, data *UpdateForm) (error error) {
@@ -45,8 +47,10 @@ func (TodoService) Update(todo *todo.TodoModel, data *UpdateForm) (error error) 
 	defer database.Close(db)
 
 	updateData := map[string]interface{}{
-		"title":   data.Title,
-		"content": data.Content,
+		"title":    data.Title,
+		"content":  data.Content,
+		"priority": data.Priority,
+		"deadline": data.Deadline,
 	}
 
 	error = db.Model(todo).Where("uid = ?", data.Id).Updates(updateData).Error
