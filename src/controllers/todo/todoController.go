@@ -3,6 +3,7 @@ package todo
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"todoList/src/models/todo"
 	"todoList/src/services/list"
 	todoService "todoList/src/services/todo"
 	"todoList/src/utils/response"
@@ -19,27 +20,34 @@ func (TodoController) List(request *gin.Context) {
 	var error error
 
 	var form = new(todoService.QueryForm)
+	form.SortOrder = "desc"
+	form.Page = 1
+	if form.From == "latest" {
+		form.SortBy = "created_at"
+		form.SortOrder = "desc"
+		form.PageSize = 20
+	}
+
 	error = request.ShouldBindQuery(form)
 	if error != nil {
 		response.ErrorWithMSG("请求失败，请重试")
 		return
 	}
 
-	fmt.Println(form)
+	form.Rules = request.QueryArray("rules[]")
 
 	if len(form.Rules) > 0 {
 		var newRules [][]string
 		for _, rule := range form.Rules {
-			fmt.Println(rule)
 			val := ""
 			opt := "="
 			if rule == "priority" {
-				val = "高"
+				val = "3"
 			}
 
 			if rule == "status" {
 				opt = "<>"
-				val = "已完成"
+				val = "2"
 			}
 
 			newRules = append(newRules, []string{rule, opt, val})
@@ -54,6 +62,9 @@ func (TodoController) List(request *gin.Context) {
 		return
 	}
 
+	if len(data) == 0 {
+		data = []todo.TodoModel{}
+	}
 	responseData := map[string]interface{}{
 		"list":  data,
 		"total": total,

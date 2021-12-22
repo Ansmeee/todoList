@@ -83,6 +83,7 @@ func (TodoService) FindByID(id string) (todo *todo.TodoModel, error error) {
 }
 
 type QueryForm struct {
+	From      string   `json:"from" form:"from"`
 	Keywords  string   `json:"keywords" form:"keywords"`
 	Page      int      `json:"page" form:"page"`
 	PageSize  int      `json:"page_size" form:"page_size"`
@@ -103,7 +104,14 @@ func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, er
 
 	if len(form.Wheres) > 0 {
 		for _, where := range form.Wheres {
-			db = db.Where("? ? ?", where[0], where[1], where[2])
+			if where[1] == "=" {
+				db = db.Where(map[string]interface{}{where[0]: where[2]})
+			}
+
+			if where[1] == "<>" {
+				db = db.Not(map[string]interface{}{where[0]: where[2]})
+			}
+
 		}
 	}
 
@@ -113,16 +121,16 @@ func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, er
 	}
 
 	if form.SortBy != "" && form.SortOrder != "" {
-		db = db.Order(fmt.Sprintf("%s %s", form.SortBy, form.SortOrder))
+		db = db.Order(fmt.Sprintf("`%s` %s", form.SortBy, form.SortOrder))
 	}
 
-	limit := form.PageSize
-	offset := (form.Page - 1) * limit
-	error = db.Limit(limit).Offset(offset).Find(&data).Error
-	if error != nil {
-		return
+	if form.PageSize > 0 {
+		limit := form.PageSize
+		offset := (form.Page - 1) * limit
+		db = db.Limit(limit).Offset(offset)
 	}
 
+	error = db.Find(&data).Error
 	return
 }
 
