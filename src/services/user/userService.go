@@ -2,6 +2,8 @@ package user
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -20,7 +22,7 @@ var thisService = &UserService{}
 var thisModel = &user.UserModel{}
 var ctx = context.Background()
 
-func (service *UserService) FindeByEmail(email string) (error error, data user.UserModel) {
+func (service *UserService) FindeByEmail(email string) (error error, data *user.UserModel) {
 	client := redis.Connect()
 	defer redis.Close(client)
 
@@ -31,8 +33,8 @@ func (service *UserService) FindeByEmail(email string) (error error, data user.U
 		fmt.Println(err.Error())
 	}
 
-	err = json.Unmarshal(cacheData, &data)
-	if err != nil {
+	json.Unmarshal(cacheData, data)
+	if data != nil {
 		return
 	}
 
@@ -49,7 +51,7 @@ func (service *UserService) FindeByEmail(email string) (error error, data user.U
 		return
 	}
 
-	err = rebuildCacke(userCacheKey, data)
+	err = rebuildCacke(userCacheKey, *data)
 	if err != nil {
 		fmt.Println("缓存更新失败")
 	}
@@ -117,13 +119,13 @@ func (service *UserService) SignIn(data *SigninForm) (token string, error error)
 		return
 	}
 
-	token, err = thisService.GenerateToken(&userInfo)
+	token, err = thisService.GenerateToken(userInfo)
 	if err != nil {
 		error = errors.New("请重试")
 		return
 	}
 
-	res := thisService.LoginByToken(token, userInfo)
+	res := thisService.LoginByToken(token, *userInfo)
 	if res != true {
 		error = errors.New("请重试")
 		return
@@ -142,7 +144,7 @@ func (UserService) LoginByToken(token string, data user.UserModel) bool  {
 		return false
 	}
 
-	expireTime := time.Second * 60 * 60
+	expireTime := 24 * 60 * 60 * time.Second
 	if _, error := client.Set(ctx, token, encodeData, expireTime).Result(); error != nil {
 		fmt.Println(error.Error())
 		return false
@@ -281,17 +283,22 @@ func (UserService) Delete(user *user.UserModel) (error error) {
 func (UserService) GenerateToken(userInfo *user.UserModel) (token string, error error)  {
 	header := map[string]string{"typ": "JWT", "alg": "HS256"}
 	headerByte, _ := json.Marshal(header)
-	encodeHeader := base64.StdEncoding.EncodeToString(headerByte)
+	encodingHeader := base64.StdEncoding.EncodeToString(headerByte)
 
 	payload := map[string]interface{}{"account": userInfo.Id, "expiredat": time.Now().Add(24 * time.Hour)}
 	payloadByte, _ := json.Marshal(payload)
-	encodePayload := base64.StdEncoding.EncodeToString(payloadByte)
+	encodingPayload := base64.StdEncoding.EncodeToString(payloadByte)
+	secret := []byte(time.Now().String())
 
-	sign
+	encodingString := encodingHeader + "." + encodingPayload
+
+	hash := hmac.New(sha256.New, secret)
+	hash.Write([]byte(encodingString))
+	token = strings.TrimRight(base64.URLEncoding.EncodeToString(hash.Sum(nil)), "=")
 	return
 }
 
-func (UserService) GetUserInfoByToken(token string) (data user.UserModel, error error)  {
+func (UserService) GetUserInfoByToken(token string) (data *user.UserModel, error error)  {
 	client := redis.Connect()
 	defer redis.Close(client)
 

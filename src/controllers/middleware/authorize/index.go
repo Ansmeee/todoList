@@ -42,7 +42,7 @@ func (Authorize) Auth(request *gin.Context)  {
 	}
 
 	authModel := new(user.AuthModel)
-	authModel.Login(&userInfo)
+	authModel.Login(userInfo)
 
 	request.Next()
 }
