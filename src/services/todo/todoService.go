@@ -35,7 +35,7 @@ func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error err
 }
 
 type UpdateForm struct {
-	Id       string `form:"id"`
+	Id       int `form:"id"`
 	Title    string `form:"title"`
 	Content  string `form:"content"`
 	Priority int    `form:"priority"`
@@ -69,7 +69,7 @@ func (TodoService) UpdateAttr(todo *todo.TodoModel, attrName string, attrValue i
 	return
 }
 
-func (TodoService) FindByID(id string) (todo *todo.TodoModel, error error) {
+func (TodoService) FindByID(id int) (todo *todo.TodoModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
@@ -91,6 +91,7 @@ type QueryForm struct {
 	SortOrder string   `json:"sort_order" form:"sort_order"`
 	Rules     []string `json:"rules" form:"rules"`
 	Wheres    [][]string
+	ListId    string
 }
 
 func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, error error) {
@@ -98,8 +99,8 @@ func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, er
 	defer database.Close(db)
 
 	db = db.Model(model)
-	if len(form.Keywords) > 0 {
-		db = db.Where("title like ?", "%"+form.Keywords+"%")
+	if len(form.ListId) > 0 {
+		db = db.Where("list_id = ?", form.ListId)
 	}
 
 	if len(form.Wheres) > 0 {
@@ -113,6 +114,10 @@ func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, er
 			}
 
 		}
+	}
+
+	if len(form.Keywords) > 0 {
+		db = db.Where("title like ?", "%"+form.Keywords+"%")
 	}
 
 	db.Count(&total)

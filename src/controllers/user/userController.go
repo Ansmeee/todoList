@@ -60,21 +60,21 @@ func (UserController) List(request *gin.Context) {
 func (UserController) SignIn(request *gin.Context)  {
 	var response = response.Response{request}
 
-	var form userService.SigninForm
-	if err := request.ShouldBind(&form); err != nil {
-		response.ErrorWithMSG("登录失败：参数错误")
+	form := new(userService.SigninForm)
+	if err := request.ShouldBind(form); err != nil {
+		response.ErrorWithMSG("登录失败")
 		return
 	}
 
 	validator := new(userValidator.UserValidator)
-	if err := validator.Validate(form, userValidator.SignInRules); err != nil {
-		response.ErrorWithMSG(fmt.Sprintf("登录失败：%s", err.Error()))
+	if err := validator.Validate(*form, userValidator.SignInRules); err != nil {
+		response.ErrorWithMSG(fmt.Sprintf("登录失败，%s", err.Error()))
 		return
 	}
 
-	token, err := service.SignIn(&form)
+	token, err := service.SignIn(form)
 	if err != nil {
-		response.ErrorWithMSG(fmt.Sprintf("登录失败：%s", err.Error()))
+		response.ErrorWithMSG(fmt.Sprintf("登录失败，%s", err.Error()))
 		return
 	}
 
@@ -101,7 +101,7 @@ func (UserController) SignUp(request *gin.Context) {
 
 	err, existUser := service.FindeByEmail(form.Email)
 	fmt.Println(existUser)
-	if err != nil || len(existUser.Id) > 0 {
+	if err != nil || existUser.Id != 0 {
 		response.ErrorWithMSG(fmt.Sprintf("验证失败：无法注册该账号"))
 		return
 	}

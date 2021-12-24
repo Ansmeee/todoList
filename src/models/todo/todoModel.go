@@ -8,7 +8,7 @@ type TodoModel struct {
 	Content  string `json:"content" form:"content"'`
 	Status   int    `json:"status" form:"status"`
 	ParentId int    `json:"parent_id" form:"parent_id"`
-	ListId   string `json:"list_id" form:"list_id"`
+	ListId   int    `json:"list_id" form:"list_id"`
 	UserId   int    `json:"user_id" form:"user_id"`
 	Tags     string `json:"tags" form:"tags"`
 	Priority int    `json:"priority" form:"priority"`

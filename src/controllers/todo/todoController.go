@@ -26,6 +26,8 @@ func (TodoController) List(request *gin.Context) {
 		form.SortBy = "created_at"
 		form.SortOrder = "desc"
 		form.PageSize = 20
+	} else {
+		form.ListId = form.From
 	}
 
 	error = request.ShouldBindQuery(form)
@@ -92,14 +94,14 @@ func (TodoController) Create(request *gin.Context) {
 		return
 	}
 
-	if len(todo.ListId) > 0 {
+	if todo.ListId != 0 {
 		list, error := listService.FindByID(todo.ListId)
 		if error != nil {
 			response.ErrorWithMSG("创建失败，请重试")
 			return
 		}
 
-		if len(list.Id) == 0 {
+		if list.Id == 0 {
 			response.ErrorWithMSG("创建失败，请重试")
 			return
 		}
@@ -122,7 +124,7 @@ func (TodoController) Detail(request *gin.Context) {
 
 	todo := thisService.NewModel()
 	error = request.ShouldBindUri(todo)
-	if error != nil || todo.Id == "" {
+	if error != nil || todo.Id == 0 {
 		response.ErrorWithMSG("获取失败，请重试")
 		return
 	}
@@ -148,7 +150,7 @@ func (TodoController) Update(request *gin.Context) {
 	}
 
 	todo, error := thisService.FindByID(form.Id)
-	if error != nil || todo.Id == "" {
+	if error != nil || todo.Id == 0 {
 		response.ErrorWithMSG("保存失败")
 		return
 	}
@@ -191,7 +193,7 @@ func (TodoController) Delete(request *gin.Context) {
 }
 
 type AttrForm struct {
-	Id    string `form:"id"`
+	Id    int `form:"id"`
 	Name  string `form:"name"`
 	Value string `form:"value"`
 }
@@ -211,7 +213,7 @@ func (TodoController) UpdateAttr(request *gin.Context) {
 	attrValue := attrForm.Value
 
 	todo, error := thisService.FindByID(attrForm.Id)
-	if error != nil || todo.Id == "" {
+	if error != nil || todo.Id == 0 {
 		response.ErrorWithMSG("保存失败")
 		return
 	}

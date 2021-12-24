@@ -15,7 +15,7 @@ func (ListService) NewModel() *list.ListModel {
 	return new(list.ListModel)
 }
 
-func (ListService) FindByID(id string) (list *list.ListModel, error error) {
+func (ListService) FindByID(id int) (list *list.ListModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
@@ -81,7 +81,7 @@ func (ListService) Update(list, data *list.ListModel) (result *list.ListModel, e
 	db := database.Connect("")
 	defer database.Close(db)
 
-	if list.Id == "" {
+	if list.Id == 0 {
 		error = errors.New("清单不存在")
 		return
 	}
@@ -101,7 +101,7 @@ func (ListService) Delete(list *list.ListModel) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
-	if list.Id == "" {
+	if list.Id == 0 {
 		error = errors.New("清单不存在")
 		return
 	}

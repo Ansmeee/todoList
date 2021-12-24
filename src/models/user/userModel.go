@@ -13,6 +13,6 @@ func (UserModel) TableName() string {
 	return "user"
 }
 
-func (UserModel) OnJob() bool {
+func (UserModel) Active() bool {
 	return true
 }

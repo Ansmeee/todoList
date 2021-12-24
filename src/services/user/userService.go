@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -31,7 +32,7 @@ func (service *UserService) FindeByEmail(email string) (error error, data user.U
 	}
 
 	err = json.Unmarshal(cacheData, &data)
-	if err == nil {
+	if err != nil {
 		return
 	}
 
@@ -56,7 +57,7 @@ func (service *UserService) FindeByEmail(email string) (error error, data user.U
 	return
 }
 
-func (service *UserService) FindByID(id string) (error error, data user.UserModel) {
+func (service *UserService) FindByID(id int) (error error, data user.UserModel) {
 	client := redis.Connect()
 	defer redis.Close(client)
 
@@ -105,25 +106,26 @@ func (service *UserService) SignIn(data *SigninForm) (token string, error error)
 		 return
 	}
 
-	if userInfo.Id == "" {
-		error = errors.New("用户信息异常")
+	fmt.Println(userInfo)
+	if userInfo.Id == 0 {
+		error = errors.New("用户不存在")
 		return
 	}
 
-	if ! userInfo.OnJob() {
+	if ! userInfo.Active() {
 		error = errors.New("该用户已删除")
 		return
 	}
 
 	token, err = thisService.GenerateToken(&userInfo)
 	if err != nil {
-		error = errors.New("用户信息异常")
+		error = errors.New("请重试")
 		return
 	}
 
 	res := thisService.LoginByToken(token, userInfo)
 	if res != true {
-		error = errors.New("登陆失败，请重试")
+		error = errors.New("请重试")
 		return
 	}
 
@@ -277,8 +279,15 @@ func (UserService) Delete(user *user.UserModel) (error error) {
 }
 
 func (UserService) GenerateToken(userInfo *user.UserModel) (token string, error error)  {
-	token = time.Now().String()
-	// TODO
+	header := map[string]string{"typ": "JWT", "alg": "HS256"}
+	headerByte, _ := json.Marshal(header)
+	encodeHeader := base64.StdEncoding.EncodeToString(headerByte)
+
+	payload := map[string]interface{}{"account": userInfo.Id, "expiredat": time.Now().Add(24 * time.Hour)}
+	payloadByte, _ := json.Marshal(payload)
+	encodePayload := base64.StdEncoding.EncodeToString(payloadByte)
+
+	sign
 	return
 }
 

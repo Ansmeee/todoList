@@ -27,14 +27,14 @@ func (Authorize) Auth(request *gin.Context)  {
 		return
 	}
 
-	if userInfo.Id == "" {
+	if userInfo.Id == 0 {
 		fmt.Println("check userInfo 失败")
 		response.ErrorWithMSG("获取失败：用户信息异常")
 		request.Abort()
 		return
 	}
 
-	if !userInfo.OnJob() {
+	if !userInfo.Active() {
 		fmt.Println("check user on job 失败")
 		response.ErrorWithMSG("获取失败：用户信息异常")
 		request.Abort()
