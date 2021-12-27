@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 	"strings"
 	"time"
+	"todoList/src/config"
 	"todoList/src/models/user"
 	"todoList/src/utils/database"
 	"todoList/src/utils/redis"
@@ -108,7 +109,6 @@ func (service *UserService) SignIn(data *SigninForm) (token string, error error)
 		 return
 	}
 
-	fmt.Println(userInfo)
 	if userInfo.Id == 0 {
 		error = errors.New("用户不存在")
 		return
@@ -288,13 +288,15 @@ func (UserService) GenerateToken(userInfo *user.UserModel) (token string, error 
 	payload := map[string]interface{}{"account": userInfo.Id, "expiredat": time.Now().Add(24 * time.Hour)}
 	payloadByte, _ := json.Marshal(payload)
 	encodingPayload := base64.StdEncoding.EncodeToString(payloadByte)
-	secret := []byte(time.Now().String())
+	secret := []byte(config.Secret)
 
 	encodingString := encodingHeader + "." + encodingPayload
 
 	hash := hmac.New(sha256.New, secret)
 	hash.Write([]byte(encodingString))
-	token = strings.TrimRight(base64.URLEncoding.EncodeToString(hash.Sum(nil)), "=")
+
+	signature := strings.TrimRight(base64.URLEncoding.EncodeToString(hash.Sum(nil)), "=")
+	token = encodingString + "." + signature
 	return
 }
 

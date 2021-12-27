@@ -12,7 +12,6 @@ import (
 type Authorize struct {
 }
 
-
 func (Authorize) Auth(request *gin.Context)  {
 	var response = response.Response{request}
 
