@@ -138,7 +138,7 @@ func (UserService) LoginByToken(token string, data user.UserModel) bool  {
 	client := redis.Connect()
 	defer redis.Close(client)
 
-	encodeData, error := json.Marshal(data.Email)
+	encodeData, error := json.Marshal(data.Id)
 	if error != nil {
 		fmt.Println(error.Error())
 		return false
