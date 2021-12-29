@@ -102,6 +102,19 @@ type SigninForm struct {
 	Auth    string `form:"auth"`
 }
 
+func (service *UserService) SignOut(token string) (error error) {
+	if len(token) == 0 {
+		return
+	}
+
+	error = thisService.LogoutByToken(token)
+	if error != nil {
+		error = errors.New("系统异常")
+	}
+
+	return
+}
+
 func (service *UserService) SignIn(data *SigninForm) (token string, error error) {
 	err, userInfo := thisService.FindeByEmail(data.Account)
 	if err != nil {
@@ -131,6 +144,14 @@ func (service *UserService) SignIn(data *SigninForm) (token string, error error)
 		return
 	}
 
+	return
+}
+
+func (UserService) LogoutByToken(token string) (error error)  {
+	client := redis.Connect()
+	defer redis.Close(client)
+
+	error = client.Del(ctx, token).Err()
 	return
 }
 

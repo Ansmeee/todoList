@@ -57,6 +57,24 @@ func (UserController) List(request *gin.Context) {
 	return
 }
 
+func (UserController) SignOut(request *gin.Context)  {
+	var response = response.Response{request}
+
+	token := request.GetHeader("Authorization")
+	if len(token) == 0 {
+		response.Success()
+		return
+	}
+
+	error := service.SignOut(token)
+	if error != nil {
+		response.ErrorWithMSG(fmt.Sprintf("登出失败，%s", error.Error()))
+		return
+	}
+
+	response.Success()
+}
+
 func (UserController) SignIn(request *gin.Context)  {
 	var response = response.Response{request}
 
