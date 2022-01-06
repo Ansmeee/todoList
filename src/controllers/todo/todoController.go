@@ -3,6 +3,7 @@ package todo
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"time"
 	"todoList/src/models/todo"
 	"todoList/src/services/list"
 	todoService "todoList/src/services/todo"
@@ -19,25 +20,20 @@ func (TodoController) List(request *gin.Context) {
 	response := response.Response{request}
 	var error error
 
-	var form = new(todoService.QueryForm)
-	form.SortOrder = "desc"
-	form.Page = 1
-	if form.From == "latest" {
-		form.SortBy = "created_at"
-		form.SortOrder = "desc"
-		form.PageSize = 20
-	} else {
-		form.ListId = form.From
-	}
-
-	error = request.ShouldBindQuery(form)
+	var form = todoService.QueryForm{From: "", SortBy: "created_at", SortOrder: "desc"}
+	error = request.ShouldBindQuery(&form)
 	if error != nil {
 		response.ErrorWithMSG("请求失败，请重试")
 		return
 	}
 
-	form.Rules = request.QueryArray("rules[]")
+	if form.From == "latest" {
+		form.PageSize = 20
+	} else {
+		form.ListId = form.From
+	}
 
+	form.Rules = request.QueryArray("rules[]")
 	if len(form.Rules) > 0 {
 		var newRules [][]string
 		for _, rule := range form.Rules {
@@ -58,7 +54,7 @@ func (TodoController) List(request *gin.Context) {
 		form.Wheres = newRules
 	}
 
-	data, total, error := thisService.List(form)
+	data, total, error := thisService.List(&form)
 	if error != nil {
 		response.ErrorWithMSG("请求失败，请重试")
 		return
@@ -109,6 +105,14 @@ func (TodoController) Create(request *gin.Context) {
 		todo.Type = list.Type
 	}
 
+	if len(todo.Title) == 0 {
+		todo.Title = "未命名"
+	}
+
+	if len(todo.Deadline) == 0 {
+		todo.Deadline = time.Now().Format("2006-01-02")
+	}
+
 	data, error := thisService.Create(todo)
 	if error != nil {
 		response.ErrorWithMSG("创建失败，请重试")
@@ -155,6 +159,10 @@ func (TodoController) Update(request *gin.Context) {
 		return
 	}
 
+	if len(form.Title) == 0 {
+		form.Title = "未命名"
+	}
+
 	error = thisService.Update(todo, form)
 	if error != nil {
 		response.ErrorWithMSG("保存失败")
@@ -193,7 +201,7 @@ func (TodoController) Delete(request *gin.Context) {
 }
 
 type AttrForm struct {
-	Id    int `form:"id"`
+	Id    int    `form:"id"`
 	Name  string `form:"name"`
 	Value string `form:"value"`
 }
