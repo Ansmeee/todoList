@@ -306,7 +306,7 @@ func (UserService) GenerateToken(userInfo *user.UserModel) (token string, error 
 	headerByte, _ := json.Marshal(header)
 	encodingHeader := base64.StdEncoding.EncodeToString(headerByte)
 
-	payload := map[string]interface{}{"account": userInfo.Id, "expiredat": time.Now().Add(24 * time.Hour)}
+	payload := map[string]interface{}{"account": userInfo.Id, "name": userInfo.Name, "expiredat": time.Now().Add(24 * time.Hour)}
 	payloadByte, _ := json.Marshal(payload)
 	encodingPayload := base64.StdEncoding.EncodeToString(payloadByte)
 	secret := []byte(config.Secret)
