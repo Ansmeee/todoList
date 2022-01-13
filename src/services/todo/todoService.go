@@ -3,6 +3,7 @@ package todo
 import (
 	"context"
 	"fmt"
+	"time"
 	"todoList/src/models/todo"
 	"todoList/src/services/common"
 	"todoList/src/utils/database"
@@ -65,7 +66,12 @@ func (TodoService) UpdateAttr(todo *todo.TodoModel, attrName string, attrValue i
 		attrValue = common.Incr("top")
 	}
 
-	error = db.Model(todo).Where("uid = ?", todo.Id).Update(attrName, attrValue).Error
+	updateData := map[string]interface{}{attrName: attrValue}
+	if attrName == "status" && attrValue == "2"{
+		updateData["finished_at"] = time.Now().Format("2006-01-02 15:01:05")
+	}
+
+	error = db.Model(todo).Where("uid = ?", todo.Id).Updates(updateData).Error
 	return
 }
 
@@ -111,6 +117,10 @@ func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, er
 
 			if where[1] == "<>" {
 				db = db.Not(map[string]interface{}{where[0]: where[2]})
+			}
+
+			if where[1] == "<=" {
+				db = db.Where(fmt.Sprintf("`%s` <= %s", where[0], where[2]))
 			}
 
 		}

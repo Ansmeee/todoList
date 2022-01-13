@@ -33,9 +33,10 @@ func (TodoController) List(request *gin.Context) {
 		form.ListId = form.From
 	}
 
+	var status = "1"
+	var newRules [][]string
 	form.Rules = request.QueryArray("rules[]")
 	if len(form.Rules) > 0 {
-		var newRules [][]string
 		for _, rule := range form.Rules {
 			val := ""
 			opt := "="
@@ -44,15 +45,16 @@ func (TodoController) List(request *gin.Context) {
 			}
 
 			if rule == "status" {
-				opt = "<>"
-				val = "2"
+				status = "2"
+				continue
 			}
 
 			newRules = append(newRules, []string{rule, opt, val})
 		}
-
-		form.Wheres = newRules
 	}
+
+	newRules = append(newRules, []string{"status", "<=", status})
+	form.Wheres = newRules
 
 	data, total, error := thisService.List(&form)
 	if error != nil {
