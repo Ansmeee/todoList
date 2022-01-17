@@ -36,22 +36,43 @@ func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error err
 }
 
 type UpdateForm struct {
-	Id       int `form:"id"`
+	Id       int    `form:"id"`
 	Title    string `form:"title"`
 	Content  string `form:"content"`
 	Priority int    `form:"priority"`
 	Deadline string `form:"deadline"`
+	Type     string `form:"type"`
+	ListId   int    `form:"list_id"`
 }
 
-func (TodoService) Update(todo *todo.TodoModel, data *UpdateForm) (error error) {
+func (TodoService) Update(todo, data *todo.TodoModel) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
-	updateData := map[string]interface{}{
-		"title":    data.Title,
-		"content":  data.Content,
-		"priority": data.Priority,
-		"deadline": data.Deadline,
+	updateData := map[string]interface{}{}
+	if todo.Priority != data.Priority {
+		updateData["priority"] = data.Priority
+	}
+
+	if todo.Deadline != data.Deadline {
+		updateData["deadline"] = data.Deadline
+	}
+
+	if todo.Title != data.Title {
+		updateData["title"] = data.Title
+	}
+
+	if todo.ListId != data.ListId {
+		updateData["list_id"] = data.ListId
+		updateData["type"] = data.Type
+	}
+
+	if todo.Content != data.Content {
+		updateData["content"] = data.Content
+	}
+
+	if len(updateData) == 0 {
+		return
 	}
 
 	error = db.Model(todo).Where("uid = ?", data.Id).Updates(updateData).Error
@@ -67,7 +88,7 @@ func (TodoService) UpdateAttr(todo *todo.TodoModel, attrName string, attrValue i
 	}
 
 	updateData := map[string]interface{}{attrName: attrValue}
-	if attrName == "status" && attrValue == "2"{
+	if attrName == "status" && attrValue == "2" {
 		updateData["finished_at"] = time.Now().Format("2006-01-02 15:01:05")
 	}
 

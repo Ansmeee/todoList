@@ -104,6 +104,7 @@ func (TodoController) Create(request *gin.Context) {
 			return
 		}
 
+		todo.ListId = list.Id
 		todo.Type = list.Type
 	}
 
@@ -148,8 +149,9 @@ func (TodoController) Update(request *gin.Context) {
 	response := response.Response{request}
 	var error error
 
-	form := new(todoService.UpdateForm)
+	form :=  thisService.NewModel()
 	error = request.ShouldBind(form)
+
 	if error != nil {
 		response.ErrorWithMSG("保存失败")
 		return
@@ -163,6 +165,22 @@ func (TodoController) Update(request *gin.Context) {
 
 	if len(form.Title) == 0 {
 		form.Title = "未命名"
+	}
+
+	if form.ListId != 0 {
+		list, error := listService.FindByID(form.ListId)
+		if error != nil {
+			response.ErrorWithMSG("更新失败")
+			return
+		}
+
+		if list.Id == 0 {
+			response.ErrorWithMSG("更新失败")
+			return
+		}
+
+		form.ListId = list.Id
+		form.Type = list.Title
 	}
 
 	error = thisService.Update(todo, form)
