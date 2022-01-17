@@ -16,22 +16,20 @@ type TodoController struct{}
 var thisService = &todoService.TodoService{}
 var listService = &list.ListService{}
 
-func (TodoController) List(request *gin.Context) {
-	response := response.Response{request}
-	var error error
+func setLatestForm(request *gin.Context, form *todoService.QueryForm) {
+	form.PageSize = 20
 
-	var form = todoService.QueryForm{From: "", SortBy: "created_at", SortOrder: "desc"}
-	error = request.ShouldBindQuery(&form)
-	if error != nil {
-		response.ErrorWithMSG("请求失败，请重试")
-		return
+	sortBy := "updated_at"
+	if len(form.SortBy) > 0 {
+		sortBy = form.SortBy
 	}
+	form.SortBy = sortBy
 
-	if form.From == "latest" {
-		form.PageSize = 20
-	} else {
-		form.ListId = form.From
+	sortOrder := "desc"
+	if len(form.SortOrder) > 0 {
+		sortOrder = form.SortOrder
 	}
+	form.SortOrder = sortOrder
 
 	var status = "1"
 	var newRules [][]string
@@ -55,8 +53,99 @@ func (TodoController) List(request *gin.Context) {
 
 	newRules = append(newRules, []string{"status", "<=", status})
 	form.Wheres = newRules
+}
 
-	data, total, error := thisService.List(&form)
+func setDoneForm(request *gin.Context, form *todoService.QueryForm) {
+	sortBy := "finished_at"
+	if len(form.SortBy) > 0 {
+		sortBy = form.SortBy
+	}
+	form.SortBy = sortBy
+
+	sortOrder := "desc"
+	if len(form.SortOrder) > 0 {
+		sortOrder = form.SortOrder
+	}
+	form.SortOrder = sortOrder
+
+	var newRules [][]string
+	form.Rules = request.QueryArray("rules[]")
+	if len(form.Rules) > 0 {
+		for _, rule := range form.Rules {
+			val := ""
+			opt := "="
+			if rule == "priority" {
+				val = "3"
+			}
+
+			newRules = append(newRules, []string{rule, opt, val})
+		}
+	}
+
+	newRules = append(newRules, []string{"status", "=", "2"})
+	form.Wheres = newRules
+}
+
+func setDefaultForm(request *gin.Context, form *todoService.QueryForm) {
+	form.ListId = form.From
+
+	sortBy := "created_at"
+	if len(form.SortBy) > 0 {
+		sortBy = form.SortBy
+	}
+	form.SortBy = sortBy
+
+	sortOrder := "desc"
+	if len(form.SortOrder) > 0 {
+		sortOrder = form.SortOrder
+	}
+	form.SortOrder = sortOrder
+
+	var status = "1"
+	var newRules [][]string
+	form.Rules = request.QueryArray("rules[]")
+	if len(form.Rules) > 0 {
+		for _, rule := range form.Rules {
+			val := ""
+			opt := "="
+			if rule == "priority" {
+				val = "3"
+			}
+
+			if rule == "status" {
+				status = "2"
+				continue
+			}
+
+			newRules = append(newRules, []string{rule, opt, val})
+		}
+	}
+
+	newRules = append(newRules, []string{"status", "<=", status})
+	form.Wheres = newRules
+}
+
+func (TodoController) List(request *gin.Context) {
+	response := response.Response{request}
+	var error error
+
+	var form = new(todoService.QueryForm)
+	error = request.ShouldBindQuery(form)
+	if error != nil {
+		response.ErrorWithMSG("请求失败，请重试")
+		return
+	}
+
+	switch form.From {
+	case "done":
+		setDoneForm(request, form)
+	case "latest":
+		setLatestForm(request, form)
+	default:
+		setDefaultForm(request, form)
+	}
+
+	data, total, error := thisService.List(form)
 	if error != nil {
 		response.ErrorWithMSG("请求失败，请重试")
 		return
@@ -149,7 +238,7 @@ func (TodoController) Update(request *gin.Context) {
 	response := response.Response{request}
 	var error error
 
-	form :=  thisService.NewModel()
+	form := thisService.NewModel()
 	error = request.ShouldBind(form)
 
 	if error != nil {
