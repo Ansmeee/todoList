@@ -3,6 +3,7 @@ package user
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"path/filepath"
 	userModel "todoList/src/models/user"
 	userService "todoList/src/services/user"
 	"todoList/src/utils/response"
@@ -181,5 +182,25 @@ func (UserController) Delete(request *gin.Context)  {
 		response.ErrorWithMSG(fmt.Sprintf("删除失败：%s", err.Error()))
 		return
 	}
+	response.Success()
+}
+
+func (UserController) Icon(request *gin.Context)  {
+	response := response.Response{request}
+
+	file, error := request.FormFile("icon")
+	if error != nil {
+		response.ErrorWithMSG("上传失败")
+		return
+	}
+
+	basePath := "./"
+	filename := basePath + filepath.Base(file.Filename)
+	if error = request.SaveUploadedFile(file, filename); error != nil {
+		fmt.Println(error.Error())
+		response.ErrorWithMSG("上传失败")
+		return
+	}
+
 	response.Success()
 }

@@ -17,9 +17,11 @@ func (*UserRouter) InitRouter(group *gin.RouterGroup) {
 		router.POST("signin", controller.SignIn)
 		router.POST("signout", controller.SignOut)
 		router.POST("signup", controller.SignUp)
+		router.POST("icon", controller.Icon)
 		router.GET("list", controller.List).Use(middleware.Auth)
 		router.DELETE("", controller.Delete).Use(middleware.Auth)
 		router.PUT("", controller.Update).Use(middleware.Auth)
 		router.GET("", controller.Info).Use(middleware.Auth)
+
 	}
 }
