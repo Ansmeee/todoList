@@ -60,38 +60,20 @@ func (service *UserService) FindeByEmail(email string) (error error, data *user.
 	return
 }
 
-func (service *UserService) FindByID(id int) (error error, data user.UserModel) {
-	client := redis.Connect()
-	defer redis.Close(client)
-
-	userCacheKey := fmt.Sprintf("user:%d", id)
-	cacheData, err := client.Get(ctx, userCacheKey).Bytes()
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	err = json.Unmarshal(cacheData, &data)
-	if err == nil {
-		return
-	}
-
+func (service *UserService) FindByID(id int) (error error, data *user.UserModel) {
 	db := database.Connect("")
 	defer database.Close(db)
 
-	err = db.Model(thisModel).First(&data, id).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			error = errors.New("不存在该记录")
+	data = new(user.UserModel)
+	error = db.Where("uid = ?", id).Find(data).Error
+	if error != nil {
+		if errors.Is(error, gorm.ErrRecordNotFound) {
+			error = errors.New("该用户不存在")
 			return
 		}
 
 		error = errors.New("获取失败")
 		return
-	}
-
-	err = rebuildCacke(userCacheKey, data)
-	if err != nil {
-		fmt.Println("缓存更新失败")
 	}
 
 	return

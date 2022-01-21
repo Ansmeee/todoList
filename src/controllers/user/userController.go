@@ -26,7 +26,7 @@ func (UserController) Info(request *gin.Context) {
 
 	err, data := service.FindByID(user.Id)
 	if err != nil {
-		response.ErrorWithMSG(fmt.Sprintf("获取失败：%s", err.Error()))
+		response.ErrorWithMSG(fmt.Sprintf("%s", err.Error()))
 		return
 	}
 
@@ -156,7 +156,7 @@ func (UserController) Update(request *gin.Context)  {
 		return
 	}
 
-	if err := service.Update(&user, &updateUser); err != nil {
+	if err := service.Update(user, &updateUser); err != nil {
 		response.ErrorWithMSG(fmt.Sprintf("操作失败：%s", err.Error()))
 	}
 
@@ -178,7 +178,7 @@ func (UserController) Delete(request *gin.Context)  {
 		return
 	}
 
-	if err := service.Delete(&user); err != nil {
+	if err := service.Delete(user); err != nil {
 		response.ErrorWithMSG(fmt.Sprintf("删除失败：%s", err.Error()))
 		return
 	}
