@@ -58,7 +58,7 @@ func (UserController) List(request *gin.Context) {
 	return
 }
 
-func (UserController) SignOut(request *gin.Context)  {
+func (UserController) SignOut(request *gin.Context) {
 	var response = response.Response{request}
 
 	token := request.GetHeader("Authorization")
@@ -76,7 +76,7 @@ func (UserController) SignOut(request *gin.Context)  {
 	response.Success()
 }
 
-func (UserController) SignIn(request *gin.Context)  {
+func (UserController) SignIn(request *gin.Context) {
 	var response = response.Response{request}
 
 	form := new(userService.SigninForm)
@@ -141,7 +141,48 @@ func (UserController) SignUp(request *gin.Context) {
 	return
 }
 
-func (UserController) Update(request *gin.Context)  {
+
+
+func (UserController) UpdateAttr(request *gin.Context) {
+	response := response.Response{request}
+
+	form := new(userService.AttrForm)
+	error := request.ShouldBind(form)
+	if error != nil {
+		response.ErrorWithMSG("更新失败")
+		return
+	}
+
+	error, user := service.FindByID(form.Id)
+	if error != nil {
+		response.ErrorWithMSG("更新失败")
+		return
+	}
+
+	if user.Id == 0 {
+		response.ErrorWithMSG("更新失败，用户信息异常")
+		return
+	}
+
+	attrKey := form.Key
+	attrVal := form.Value
+
+	if "" == attrKey {
+		response.ErrorWithMSG("更新失败")
+		return
+	}
+
+	error = service.UpdateAttr(user, attrKey, attrVal)
+	if error != nil {
+		response.ErrorWithMSG("更新失败")
+		return
+	}
+
+	response.SuccessWithData(*user)
+
+}
+
+func (UserController) Update(request *gin.Context) {
 	response := response.Response{request}
 
 	var updateUser userModel.UserModel
@@ -163,7 +204,7 @@ func (UserController) Update(request *gin.Context)  {
 	response.Success()
 }
 
-func (UserController) Delete(request *gin.Context)  {
+func (UserController) Delete(request *gin.Context) {
 	response := response.Response{request}
 
 	userForm := new(userModel.UserModel)
@@ -185,7 +226,7 @@ func (UserController) Delete(request *gin.Context)  {
 	response.Success()
 }
 
-func (UserController) Icon(request *gin.Context)  {
+func (UserController) Icon(request *gin.Context) {
 	response := response.Response{request}
 
 	file, error := request.FormFile("icon")

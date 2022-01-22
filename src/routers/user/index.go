@@ -20,6 +20,7 @@ func (*UserRouter) InitRouter(group *gin.RouterGroup) {
 		router.GET("list", controller.List)
 		router.DELETE("", controller.Delete)
 		router.PUT("", controller.Update)
+		router.PUT("/attr", controller.UpdateAttr)
 
 	}
 }

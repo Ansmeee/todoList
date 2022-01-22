@@ -38,6 +38,7 @@ func (ListService) List(params *Params) (total int64, data []*list.ListModel, er
 	defer database.Close(db)
 
 	total = 0
+	data = []*list.ListModel{}
 	page := (params.Page - 1) * params.PageSize
 
 	query := db.Model(model)

@@ -104,6 +104,8 @@ func (service *UserService) SignIn(data *SigninForm) (token string, error error)
 		 return
 	}
 
+	fmt.Println(userInfo)
+
 	if userInfo.Id == 0 {
 		error = errors.New("用户不存在")
 		return
@@ -184,6 +186,23 @@ func (service *UserService) SignUp(data *SignupForm) (err error) {
 
 	return
 }
+
+type AttrForm struct {
+	Id    int    `form:"id"`
+	Key   string `form:"key"`
+	Value string `form:"value"`
+}
+func (UserService) UpdateAttr(user *user.UserModel, key string, value interface{}) (error error) {
+	db := database.Connect("")
+	defer database.Close(db)
+
+	updateData := map[string]interface{}{"updated_at": time.Now().Format("2006-01-02 15:01:05")}
+	updateData[key] = value
+
+	error = db.Model(user).Where("uid = ?", user.Id).Updates(updateData).Error
+	return
+}
+
 
 func (service *UserService) Update(user, data *user.UserModel) (error error) {
 	client := redis.Connect()
