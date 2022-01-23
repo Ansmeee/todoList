@@ -192,6 +192,7 @@ type AttrForm struct {
 	Key   string `form:"key"`
 	Value string `form:"value"`
 }
+
 func (UserService) UpdateAttr(user *user.UserModel, key string, value interface{}) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)

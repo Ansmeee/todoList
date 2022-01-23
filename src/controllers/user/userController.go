@@ -1,9 +1,11 @@
 package user
 
 import (
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"path/filepath"
+	"github.com/qiniu/go-sdk/v7/auth/qbox"
+	"github.com/qiniu/go-sdk/v7/storage"
 	userModel "todoList/src/models/user"
 	userService "todoList/src/services/user"
 	"todoList/src/utils/response"
@@ -13,6 +15,7 @@ import (
 type UserController struct {
 }
 
+var ctx = context.Background()
 var service userService.UserService
 
 func (UserController) Info(request *gin.Context) {
@@ -141,8 +144,6 @@ func (UserController) SignUp(request *gin.Context) {
 	return
 }
 
-
-
 func (UserController) UpdateAttr(request *gin.Context) {
 	response := response.Response{request}
 
@@ -229,19 +230,54 @@ func (UserController) Delete(request *gin.Context) {
 func (UserController) Icon(request *gin.Context) {
 	response := response.Response{request}
 
-	file, error := request.FormFile("icon")
+	form := new(userService.AttrForm)
+	error := request.ShouldBind(form)
+
 	if error != nil {
 		response.ErrorWithMSG("上传失败")
 		return
 	}
 
-	basePath := "./"
-	filename := basePath + filepath.Base(file.Filename)
-	if error = request.SaveUploadedFile(file, filename); error != nil {
+	error, user := service.FindByID(form.Id)
+	if error != nil || user.Id == 0 {
+		response.ErrorWithMSG("上传失败")
+		return
+	}
+
+	file, fileHeader, error := request.Request.FormFile("icon")
+	if error != nil {
+		response.ErrorWithMSG("上传失败")
+		return
+	}
+
+	putPolicy := storage.PutPolicy{Scope: "ansmetodolist"}
+	mac := qbox.NewMac("grcCCRTRuJwq0OKb4VUbxZm5L2_FQlJyUex0mN85", "EYd181-l6Rc5yvGNtszmHvurp9qiaYsfGgVktF5f")
+	upToken := putPolicy.UploadToken(mac)
+
+	cfg := storage.Config{
+		Zone:          &storage.ZoneHuabei,
+		UseCdnDomains: false,
+	}
+
+	imgHost := "http://r646b3gyv.hb-bkt.clouddn.com"
+	fileSize := fileHeader.Size
+	putExtra := storage.PutExtra{}
+	formUploader := storage.NewFormUploader(&cfg)
+	ret := storage.PutRet{}
+	err := formUploader.PutWithoutKey(ctx, &ret, upToken, file, fileSize, &putExtra)
+	if err != nil {
+		fmt.Println(err.Error())
+		response.ErrorWithMSG("上传失败")
+		return
+	}
+
+	url := storage.MakePublicURL(imgHost, ret.Key)
+	error = service.UpdateAttr(user, "icon", url)
+	if error !=nil {
 		fmt.Println(error.Error())
 		response.ErrorWithMSG("上传失败")
 		return
 	}
 
-	response.Success()
+	response.SuccessWithData(url)
 }
