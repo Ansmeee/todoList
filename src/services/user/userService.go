@@ -104,8 +104,6 @@ func (service *UserService) SignIn(data *SigninForm) (token string, error error)
 		 return
 	}
 
-	fmt.Println(userInfo)
-
 	if userInfo.Id == 0 {
 		error = errors.New("用户不存在")
 		return
@@ -308,7 +306,12 @@ func (UserService) GenerateToken(userInfo *user.UserModel) (token string, error 
 	headerByte, _ := json.Marshal(header)
 	encodingHeader := base64.StdEncoding.EncodeToString(headerByte)
 
-	payload := map[string]interface{}{"account": userInfo.Id, "name": userInfo.Name, "expiredat": time.Now().Add(24 * time.Hour)}
+	payload := map[string]interface{}{
+		"account": userInfo.Id,
+		"name": userInfo.Name,
+		"expiredat": time.Now().Add(24 * time.Hour),
+		"icon": userInfo.Icon,
+	}
 	payloadByte, _ := json.Marshal(payload)
 	encodingPayload := base64.StdEncoding.EncodeToString(payloadByte)
 	secret := []byte(config.Secret)
