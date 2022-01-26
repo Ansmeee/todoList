@@ -13,6 +13,7 @@ import (
 	"time"
 	"todoList/src/config"
 	"todoList/src/models/user"
+	"todoList/src/services/common"
 	"todoList/src/utils/database"
 	"todoList/src/utils/redis"
 )
@@ -80,8 +81,8 @@ func (service *UserService) FindByID(id int) (error error, data *user.UserModel)
 }
 
 type SigninForm struct {
-	Account string `form:"account"`
-	Auth    string `form:"auth"`
+	Account  string `form:"account"`
+	Password string `form:"password"`
 }
 
 func (service *UserService) SignOut(token string) (error error) {
@@ -100,17 +101,23 @@ func (service *UserService) SignOut(token string) (error error) {
 func (service *UserService) SignIn(data *SigninForm) (token string, error error) {
 	err, userInfo := thisService.FindeByEmail(data.Account)
 	if err != nil {
-		 error = errors.New("用户信息异常")
-		 return
-	}
-
-	if userInfo.Id == 0 {
-		error = errors.New("用户不存在")
+		error = errors.New("该用户不存在")
 		return
 	}
 
-	if ! userInfo.Active() {
-		error = errors.New("该用户已删除")
+	if userInfo.Id == 0 {
+		error = errors.New("该用户不存在")
+		return
+	}
+
+	if !userInfo.Active() {
+		error = errors.New("该用户不存在")
+		return
+	}
+
+	error = thisService.AuthPassword(userInfo.Id, data.Password)
+	if error != nil {
+		error = errors.New("用户名或密码不正确")
 		return
 	}
 
@@ -129,7 +136,16 @@ func (service *UserService) SignIn(data *SigninForm) (token string, error error)
 	return
 }
 
-func (UserService) LogoutByToken(token string) (error error)  {
+func (UserService) AuthPassword(account int, password string) (error error) {
+	db := database.Connect("")
+	defer database.Close(db)
+
+	auth := new(user.AuthModel)
+	error = db.Where("account = ? and auth = ?", account, password).First(auth).Error
+	return
+}
+
+func (UserService) LogoutByToken(token string) (error error) {
 	client := redis.Connect()
 	defer redis.Close(client)
 
@@ -137,7 +153,7 @@ func (UserService) LogoutByToken(token string) (error error)  {
 	return
 }
 
-func (UserService) LoginByToken(token string, data user.UserModel) bool  {
+func (UserService) LoginByToken(token string, data user.UserModel) bool {
 	client := redis.Connect()
 	defer redis.Close(client)
 
@@ -157,31 +173,44 @@ func (UserService) LoginByToken(token string, data user.UserModel) bool  {
 }
 
 type SignupForm struct {
-	Email    string `form:"email"`
+	Account  string `form:"account"`
 	PassWord string `form:"password"`
 	Auth     string `form:"auth"`
+	Way      string `form:"way"`
 }
-func (service *UserService) SignUp(data *SignupForm) (err error) {
+
+func signUpWithEmail(form *SignupForm) (data *user.UserModel, err error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
 	err = db.Transaction(func(tx *gorm.DB) error {
-		var newUser user.UserModel
-		newUser.Email = data.Email
+		newUser := new(user.UserModel)
+		newUser.Id = common.GetUID("userUID")
+		newUser.Email = form.Account
 		if tx.Model(thisModel).Create(&newUser).Error != nil {
-			return errors.New("用户信息存储失败")
+			return errors.New("注册失败")
 		}
 
 		var userAuth user.AuthModel
-		userAuth.Email = newUser.Email
-		userAuth.Auth  = data.Auth
+		userAuth.Account = newUser.Id
+		userAuth.Auth = form.Auth
 		if tx.Model(&user.AuthModel{}).Create(&userAuth).Error != nil {
-			return errors.New("用户信息存储失败")
+			return errors.New("注册失败")
 		}
 
+		data = newUser
 		return nil
 	})
 
+	return
+}
+
+func (service *UserService) SignUp(data *SignupForm) (user *user.UserModel, error error) {
+	if data.Way == "email" {
+		return signUpWithEmail(data)
+	}
+
+	error = errors.New("注册失败")
 	return
 }
 
@@ -201,7 +230,6 @@ func (UserService) UpdateAttr(user *user.UserModel, key string, value interface{
 	error = db.Model(user).Where("uid = ?", user.Id).Updates(updateData).Error
 	return
 }
-
 
 func (service *UserService) Update(user, data *user.UserModel) (error error) {
 	client := redis.Connect()
@@ -265,7 +293,7 @@ func (service *UserService) List(params *QueryParams) (error error, data interfa
 		if db.Model(thisModel).Where(strings.Join(wheres, " and ")).Count(&total).Error != nil {
 			error = errors.New("系统异常")
 			return
-		} 
+		}
 	} else {
 		if db.Model(thisModel).Count(&total).Error != nil {
 			error = errors.New("系统异常")
@@ -273,7 +301,9 @@ func (service *UserService) List(params *QueryParams) (error error, data interfa
 		}
 	}
 
-	if total == 0 { return }
+	if total == 0 {
+		return
+	}
 
 	var userList []user.UserModel
 	page := (params.Page - 1) * params.PageSize
@@ -301,16 +331,16 @@ func (UserService) Delete(user *user.UserModel) (error error) {
 	return
 }
 
-func (UserService) GenerateToken(userInfo *user.UserModel) (token string, error error)  {
+func (UserService) GenerateToken(userInfo *user.UserModel) (token string, error error) {
 	header := map[string]string{"typ": "JWT", "alg": "HS256"}
 	headerByte, _ := json.Marshal(header)
 	encodingHeader := base64.StdEncoding.EncodeToString(headerByte)
 
 	payload := map[string]interface{}{
-		"account": userInfo.Id,
-		"name": userInfo.Name,
+		"account":   userInfo.Id,
+		"name":      userInfo.Name,
 		"expiredat": time.Now().Add(24 * time.Hour),
-		"icon": userInfo.Icon,
+		"icon":      userInfo.Icon,
 	}
 	payloadByte, _ := json.Marshal(payload)
 	encodingPayload := base64.StdEncoding.EncodeToString(payloadByte)
@@ -326,7 +356,7 @@ func (UserService) GenerateToken(userInfo *user.UserModel) (token string, error 
 	return
 }
 
-func (UserService) GetUserInfoByToken(token string) (data *user.UserModel, error error)  {
+func (UserService) GetUserInfoByToken(token string) (data *user.UserModel, error error) {
 	client := redis.Connect()
 	defer redis.Close(client)
 

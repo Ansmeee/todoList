@@ -10,4 +10,4 @@ var UserCreateRules = validator.Rule{"Name": "required;string", "Email": "requir
 
 var SignUpRules = validator.Rule{"Email": "required;email", "Password": "required", "Auth": "required"}
 
-var SignInRules = validator.Rule{"Account": "required", "Auth": "required"}
+var SignInRules = validator.Rule{"Account": "required", "Password": "required"}

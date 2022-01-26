@@ -1,13 +1,14 @@
 package user
 
 import (
-	"todoList/src/models"
+	"time"
 )
 
 type AuthModel struct {
-	Email string `json:"email" form:"email" gorm:"unique"`
-	Auth  string `json:"auth" form:"auth"`
-	models.Model
+	Account   int       `json:"account" form:"account" gorm:"unique"`
+	Auth      string    `json:"auth" form:"auth"`
+	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime;<-:create"`
+	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 var user *UserModel

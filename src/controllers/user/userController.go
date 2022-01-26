@@ -117,31 +117,42 @@ func (UserController) SignUp(request *gin.Context) {
 	// 参数验证
 	validator := new(userValidator.UserValidator)
 	if err := validator.Validate(form, userValidator.SignUpRules); err != nil {
-		response.ErrorWithMSG(fmt.Sprintf("验证失败：%s", err.Error()))
+		response.ErrorWithMSG(fmt.Sprintf("%s", err.Error()))
 		return
 	}
 
-	err, existUser := service.FindeByEmail(form.Email)
-	fmt.Println(existUser)
-	if err != nil || existUser.Id != 0 {
-		response.ErrorWithMSG(fmt.Sprintf("验证失败：无法注册该账号"))
-		return
+	if form.Way == "email" {
+		err, existUser := service.FindeByEmail(form.Account)
+		if err != nil || existUser.Id != 0 {
+			response.ErrorWithMSG(fmt.Sprintf("该邮箱已被占用"))
+			return
+		}
 	}
 
-	fmt.Println(form.Auth, form.PassWord)
+	if form.Way == "phone" {
+
+	}
+
 	if form.Auth != form.PassWord {
-		response.ErrorWithMSG(fmt.Sprintf("验证失败：两次输入的密码不一致"))
+		response.ErrorWithMSG(fmt.Sprintf("两次输入的密码不一致"))
 		return
 	}
 
 	// 注册
-	if err := service.SignUp(&form); err != nil {
-		response.ErrorWithMSG(fmt.Sprintf("创建失败：%s", err.Error()))
+	user, error := service.SignUp(&form)
+	if  error != nil {
+		response.ErrorWithMSG(fmt.Sprintf("%s", error.Error()))
 		return
 	}
 
-	response.Success()
-	return
+	token, err := service.GenerateToken(user)
+	if err != nil {
+		response.SuccessWithDetail(302, "", nil)
+		return
+	}
+
+	var data = map[string]string{"token": token}
+	response.SuccessWithData(data)
 }
 
 func (UserController) UpdateAttr(request *gin.Context) {
