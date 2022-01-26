@@ -163,6 +163,7 @@ func (UserService) LoginByToken(token string, data user.UserModel) bool {
 		return false
 	}
 
+
 	expireTime := 24 * 60 * 60 * time.Second
 	if _, error := client.Set(ctx, token, encodeData, expireTime).Result(); error != nil {
 		fmt.Println(error.Error())
@@ -361,24 +362,23 @@ func (UserService) GetUserInfoByToken(token string) (data *user.UserModel, error
 	defer redis.Close(client)
 
 	cacheData, err := client.Get(ctx, token).Bytes()
-
 	if err != nil {
 		error = errors.New("用户信息获取失败")
 		return
 	}
 
-	var email string
-	err = json.Unmarshal(cacheData, &email)
+	var account int
+	err = json.Unmarshal(cacheData, &account)
 	if err != nil {
 		error = errors.New("用户信息获取失败")
 		return
 	}
 
-	if len(email) == 0 {
+	if account == 0 {
 		error = errors.New("用户信息获取失败")
 		return
 	}
 
-	err, data = thisService.FindeByEmail(email)
+	err, data = thisService.FindByID(account)
 	return
 }

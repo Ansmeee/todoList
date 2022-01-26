@@ -8,19 +8,15 @@ import (
 type UserRouter struct {
 }
 
-func (*UserRouter) InitRouter(group *gin.RouterGroup) {
-	router := group.Group("user")
+func (*UserRouter) InitRouter(router gin.IRoutes) {
 	controller := new(user.UserController)
-	{
-		router.POST("signin", controller.SignIn)
-		router.POST("signout", controller.SignOut)
-		router.POST("signup", controller.SignUp)
-		router.POST("icon", controller.Icon)
-		router.GET("", controller.Info)
-		router.GET("list", controller.List)
-		router.DELETE("", controller.Delete)
-		router.PUT("", controller.Update)
-		router.PUT("/attr", controller.UpdateAttr)
-
-	}
+	router.POST("user/signin", controller.SignIn)
+	router.POST("user/signout", controller.SignOut)
+	router.POST("user/signup", controller.SignUp)
+	router.POST("user/icon", controller.Icon)
+	router.GET("user", controller.Info)
+	router.GET("user/list", controller.List)
+	router.DELETE("user", controller.Delete)
+	router.PUT("user", controller.Update)
+	router.PUT("user/attr", controller.UpdateAttr)
 }

@@ -15,7 +15,7 @@ type Authorize struct {
 func (Authorize) Auth(request *gin.Context)  {
 	var response = response.Response{request}
 
-	token := request.GetHeader("token")
+	token := request.GetHeader("Authorization")
 
 	userService := new(userService.UserService)
 	userInfo, err := userService.GetUserInfoByToken(token)
@@ -41,7 +41,7 @@ func (Authorize) Auth(request *gin.Context)  {
 	}
 
 	authModel := new(user.AuthModel)
-	authModel.Login(userInfo)
+	authModel.SetUser(userInfo)
 
 	request.Next()
 }

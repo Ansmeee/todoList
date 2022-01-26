@@ -5,15 +5,14 @@ import (
 	"todoList/src/controllers/list"
 )
 
-type ListRouter struct {}
+type ListRouter struct{}
 
-func (ListRouter) InitRouter(group *gin.RouterGroup)  {
-	router := group.Group("list")
+func (ListRouter) InitRouter(router gin.IRoutes) {
 	controller := new(list.ListController)
 	{
-		router.GET("", controller.List)
-		router.POST("", controller.Create)
-		router.PUT("/:id", controller.Update)
-		router.DELETE("/:id", controller.Delete)
+		router.GET("list", controller.List)
+		router.POST("list", controller.Create)
+		router.PUT("list/:id", controller.Update)
+		router.DELETE("list/:id", controller.Delete)
 	}
 }

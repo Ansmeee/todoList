@@ -11,16 +11,16 @@ type AuthModel struct {
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
-var user *UserModel
+var user = &UserModel{}
 
 func (AuthModel) TableName() string {
 	return "user_auth"
 }
 
-func (AuthModel) Login(userInfo *UserModel) {
+func (AuthModel) SetUser(userInfo *UserModel) {
 	user = userInfo
 }
 
-func (AuthModel) GetUser() *UserModel {
+func User() *UserModel {
 	return user
 }

@@ -8,16 +8,12 @@ import (
 type TodoRouter struct {
 }
 
-func (*TodoRouter) InitRouter(group *gin.RouterGroup) {
-	//middleware := new(authorize.Authorize)
-	router := group.Group("todo")
+func (*TodoRouter) InitRouter(router gin.IRoutes) {
 	controller := new(todo.TodoController)
-	{
-		router.GET("", controller.List)
-		router.POST("", controller.Create)
-		router.PUT("", controller.Update)
-		router.GET("/:id", controller.Detail)
-		router.DELETE("/:id", controller.Delete)
-		router.PUT("attr", controller.UpdateAttr)
-	}
+	router.GET("todo", controller.List)
+	router.POST("todo", controller.Create)
+	router.PUT("todo", controller.Update)
+	router.GET("todo/:id", controller.Detail)
+	router.DELETE("todo/:id", controller.Delete)
+	router.PUT("todo/attr", controller.UpdateAttr)
 }

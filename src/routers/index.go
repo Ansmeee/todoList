@@ -14,8 +14,8 @@ type RouterGroup struct {
 	ListRouter list.ListRouter
 }
 
-func (group *RouterGroup) InitRouter(routerGroup *gin.RouterGroup) {
-	group.UserRouter.InitRouter(routerGroup)
-	group.TodoRouter.InitRouter(routerGroup)
-	group.ListRouter.InitRouter(routerGroup)
+func (group *RouterGroup) InitRouter(routers gin.IRoutes) {
+	group.UserRouter.InitRouter(routers)
+	group.TodoRouter.InitRouter(routers)
+	group.ListRouter.InitRouter(routers)
 }
