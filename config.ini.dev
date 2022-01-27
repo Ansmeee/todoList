@@ -1,0 +1,31 @@
+# possible values : production, development
+app_mode = development
+
+[server]
+# Protocol (http or https)
+protocol = http
+
+ip = 127.0.0.1
+# The http port  to use
+port = 8000
+
+[database]
+driver = mysql
+username = dev
+password = dev007
+host = 127.0.0.1
+port = 3306
+database = demo
+
+;driver = mysql
+;username = root
+;password = master
+;host = 192.168.56.2
+;port = 3306
+;database = todolist
+
+[cache]
+driver = redis
+host = 127.0.0.1
+port = 6379
+password = ansme@redis
