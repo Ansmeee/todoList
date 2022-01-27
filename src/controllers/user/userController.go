@@ -151,12 +151,24 @@ func (UserController) SignUp(request *gin.Context) {
 		return
 	}
 
+	res := service.LoginByToken(token, *user)
+	if res != true {
+		response.SuccessWithDetail(302, "", nil)
+		return
+	}
+
 	var data = map[string]string{"token": token}
 	response.SuccessWithData(data)
 }
 
 func (UserController) UpdateAttr(request *gin.Context) {
 	response := response.Response{request}
+
+	user := userModel.User()
+	if user.Id == 0 {
+		response.ErrorWithMSG("请先登陆")
+		return
+	}
 
 	form := new(userService.AttrForm)
 	error := request.ShouldBind(form)
@@ -165,14 +177,8 @@ func (UserController) UpdateAttr(request *gin.Context) {
 		return
 	}
 
-	error, user := service.FindByID(form.Id)
-	if error != nil {
+	if user.Id != form.Id {
 		response.ErrorWithMSG("更新失败")
-		return
-	}
-
-	if user.Id == 0 {
-		response.ErrorWithMSG("更新失败，用户信息异常")
 		return
 	}
 
@@ -241,6 +247,12 @@ func (UserController) Delete(request *gin.Context) {
 func (UserController) Icon(request *gin.Context) {
 	response := response.Response{request}
 
+	user := userModel.User()
+	if user.Id == 0 {
+		response.ErrorWithMSG("请先登陆")
+		return
+	}
+
 	form := new(userService.AttrForm)
 	error := request.ShouldBind(form)
 
@@ -249,8 +261,7 @@ func (UserController) Icon(request *gin.Context) {
 		return
 	}
 
-	error, user := service.FindByID(form.Id)
-	if error != nil || user.Id == 0 {
+	if error != nil ||  user.Id != form.Id{
 		response.ErrorWithMSG("上传失败")
 		return
 	}

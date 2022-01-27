@@ -7,7 +7,8 @@ import (
 	"todoList/src/utils/database"
 )
 
-type ListService struct {}
+type ListService struct{}
+
 var model = &list.ListModel{}
 var service = &ListService{}
 
@@ -31,8 +32,10 @@ func (ListService) FindByID(id int) (list *list.ListModel, error error) {
 type Params struct {
 	Keywords string
 	PageSize int
-	Page int
+	Page     int
+	Userid   int
 }
+
 func (ListService) List(params *Params) (total int64, data []*list.ListModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
@@ -43,8 +46,12 @@ func (ListService) List(params *Params) (total int64, data []*list.ListModel, er
 
 	query := db.Model(model)
 
+	if params.Userid != 0 {
+		query = query.Where("user_id = ?", params.Userid)
+	}
+
 	if len(params.Keywords) > 0 {
-		query = query.Where("title like ?", "%" + params.Keywords + "%")
+		query = query.Where("title like ?", "%"+params.Keywords+"%")
 	}
 
 	if query.Count(&total).Error != nil {
@@ -86,7 +93,6 @@ func (ListService) Update(list, data *list.ListModel) (result *list.ListModel, e
 		error = errors.New("清单不存在")
 		return
 	}
-
 
 	error = db.Model(list).Omit("uid", "created_at", "deleted_at").Where("uid = ?", data.Id).Save(data).Error
 

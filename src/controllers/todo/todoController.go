@@ -3,8 +3,10 @@ package todo
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"strconv"
 	"time"
 	"todoList/src/models/todo"
+	"todoList/src/models/user"
 	"todoList/src/services/list"
 	todoService "todoList/src/services/todo"
 	"todoList/src/utils/response"
@@ -51,7 +53,7 @@ func setLatestForm(request *gin.Context, form *todoService.QueryForm) {
 		}
 	}
 
-	newRules = append(newRules, []string{"status", "<=", status})
+	newRules = append(newRules, []string{"status", "<=", status}, []string{"user_id", "=", strconv.Itoa(user.User().Id)})
 	form.Wheres = newRules
 }
 
@@ -82,7 +84,7 @@ func setDoneForm(request *gin.Context, form *todoService.QueryForm) {
 		}
 	}
 
-	newRules = append(newRules, []string{"status", "=", "2"})
+	newRules = append(newRules, []string{"status", "=", "2"}, []string{"user_id", "=", strconv.Itoa(user.User().Id)})
 	form.Wheres = newRules
 }
 
@@ -121,13 +123,19 @@ func setDefaultForm(request *gin.Context, form *todoService.QueryForm) {
 		}
 	}
 
-	newRules = append(newRules, []string{"status", "<=", status})
+	newRules = append(newRules, []string{"status", "<=", status}, []string{"user_id", "=", strconv.Itoa(user.User().Id)})
 	form.Wheres = newRules
 }
 
 func (TodoController) List(request *gin.Context) {
 	response := response.Response{request}
 	var error error
+
+	user := user.User()
+	if user.Id == 0 {
+		response.ErrorWithMSG("请先登陆")
+		return
+	}
 
 	var form = new(todoService.QueryForm)
 	error = request.ShouldBindQuery(form)
@@ -165,8 +173,14 @@ func (TodoController) List(request *gin.Context) {
 
 func (TodoController) Create(request *gin.Context) {
 	var response = response.Response{request}
-
 	var error error
+
+	user := user.User()
+	if user.Id == 0 {
+		response.ErrorWithMSG("请先登陆")
+		return
+	}
+
 	todo := thisService.NewModel()
 	error = request.ShouldBind(todo)
 	if error != nil {
@@ -205,6 +219,8 @@ func (TodoController) Create(request *gin.Context) {
 		todo.Deadline = time.Now().Format("2006-01-02")
 	}
 
+	todo.UserId = user.Id
+
 	data, error := thisService.Create(todo)
 	if error != nil {
 		response.ErrorWithMSG("创建失败，请重试")
@@ -218,6 +234,12 @@ func (TodoController) Detail(request *gin.Context) {
 	var response = response.Response{request}
 	var error error
 
+	user := user.User()
+	if user.Id == 0 {
+		response.ErrorWithMSG("请先登陆")
+		return
+	}
+
 	todo := thisService.NewModel()
 	error = request.ShouldBindUri(todo)
 	if error != nil || todo.Id == 0 {
@@ -226,7 +248,7 @@ func (TodoController) Detail(request *gin.Context) {
 	}
 
 	data, error := thisService.FindByID(todo.Id)
-	if error != nil {
+	if error != nil || data.UserId != user.Id {
 		response.ErrorWithMSG("获取失败，请重试")
 		return
 	}
@@ -238,6 +260,12 @@ func (TodoController) Update(request *gin.Context) {
 	response := response.Response{request}
 	var error error
 
+	user := user.User()
+	if user.Id == 0 {
+		response.ErrorWithMSG("请先登陆")
+		return
+	}
+
 	form := thisService.NewModel()
 	error = request.ShouldBind(form)
 
@@ -247,7 +275,7 @@ func (TodoController) Update(request *gin.Context) {
 	}
 
 	todo, error := thisService.FindByID(form.Id)
-	if error != nil || todo.Id == 0 {
+	if error != nil || todo.Id == 0 || todo.UserId != user.Id {
 		response.ErrorWithMSG("保存失败")
 		return
 	}
@@ -284,17 +312,21 @@ func (TodoController) Update(request *gin.Context) {
 
 func (TodoController) Delete(request *gin.Context) {
 	response := response.Response{request}
-	var error error
+	user := user.User()
+	if user.Id == 0 {
+		response.ErrorWithMSG("请先登陆")
+		return
+	}
 
 	form := thisService.NewModel()
-	error = request.ShouldBindUri(form)
+	error := request.ShouldBindUri(form)
 	if error != nil {
 		response.ErrorWithMSG("删除失败")
 		return
 	}
 
 	todo, error := thisService.FindByID(form.Id)
-	if error != nil {
+	if error != nil || todo.UserId != user.Id{
 		response.ErrorWithMSG("删除失败")
 		return
 	}
@@ -317,10 +349,15 @@ type AttrForm struct {
 
 func (TodoController) UpdateAttr(request *gin.Context) {
 	response := response.Response{request}
-	var error error
+
+	user := user.User()
+	if user.Id == 0 {
+		response.ErrorWithMSG("请先登陆")
+		return
+	}
 
 	attrForm := new(AttrForm)
-	error = request.ShouldBind(attrForm)
+	error := request.ShouldBind(attrForm)
 	if error != nil {
 		response.ErrorWithMSG("保存失败")
 		return
@@ -330,7 +367,7 @@ func (TodoController) UpdateAttr(request *gin.Context) {
 	attrValue := attrForm.Value
 
 	todo, error := thisService.FindByID(attrForm.Id)
-	if error != nil || todo.Id == 0 {
+	if error != nil || todo.Id == 0 || todo.UserId != user.Id{
 		response.ErrorWithMSG("保存失败")
 		return
 	}
