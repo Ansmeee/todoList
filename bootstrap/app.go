@@ -12,10 +12,18 @@ import (
 )
 
 func StartEngine() {
-	cfg, error := ini.Load("config.ini")
-	if error != nil {
-		fmt.Println("load ini file error:", error.Error())
-		os.Exit(-1)
+	args := os.Args
+
+	var error error
+	var cfg *ini.File
+
+	if len(args) == 2 {
+		cfgFile := args[1]
+		cfg, error = ini.Load(cfgFile)
+	}
+
+	if error != nil || cfg == nil {
+		cfg, error = ini.Load("config.ini")
 	}
 
 	// 初始化配置文件

@@ -8,24 +8,17 @@ import (
 
 func Auth(request *gin.Context)  {
 	token := request.GetHeader("Authorization")
+
+	userInfo := new(user.UserModel)
+	authModel := new(user.AuthModel)
 	if len(token) == 0 {
+		authModel.SetUser(userInfo)
 		request.Next()
 		return
 	}
 
 	userService := new(userService.UserService)
-	userInfo, err := userService.GetUserInfoByToken(token)
-	if err != nil {
-		request.Next()
-		return
-	}
-
-	if userInfo.Id == 0 {
-		request.Next()
-		return
-	}
-
-	authModel := new(user.AuthModel)
+	userInfo, _ = userService.GetUserInfoByToken(token)
 	authModel.SetUser(userInfo)
 
 	request.Next()

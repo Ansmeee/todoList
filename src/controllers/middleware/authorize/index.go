@@ -14,12 +14,21 @@ type Authorize struct {
 func (Authorize) Auth(request *gin.Context)  {
 	var response = response.Response{request}
 	user := user.User()
-	if user.Id == 0 {
+
+	if user == nil {
 		fmt.Println("check userInfo fail")
-		response.ErrorWithMSG("请先登陆")
+		response.ErrorWithDetail(499, "请先登陆", nil)
 		request.Abort()
-		return
 	}
 
+	fmt.Println(user)
+	fmt.Println(user.Id)
+	if user.Id == 0 {
+		fmt.Println("check userInfo fail")
+		response.ErrorWithDetail(499, "请先登陆", nil)
+		request.Abort()
+	}
+
+	fmt.Println("error user info")
 	request.Next()
 }

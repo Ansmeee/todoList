@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 	"strings"
 	"time"
+	cfg "todoList/config"
 	"todoList/src/config"
 	"todoList/src/models/user"
 	"todoList/src/services/common"
@@ -164,7 +165,14 @@ func (UserService) LoginByToken(token string, data user.UserModel) bool {
 	}
 
 
-	expireTime := 24 * 60 * 60 * time.Second
+	conf, error := cfg.Config()
+	if error != nil {
+		fmt.Println(error.Error())
+		return false
+	}
+
+	tokenLifeTime := conf.Section("cache").Key("token_life_time").MustInt(86400)
+	expireTime := time.Second * time.Duration(tokenLifeTime)
 	if _, error := client.Set(ctx, token, encodeData, expireTime).Result(); error != nil {
 		fmt.Println(error.Error())
 		return false
