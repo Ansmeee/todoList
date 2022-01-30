@@ -7,6 +7,7 @@ import (
 	"github.com/qiniu/go-sdk/v7/auth/qbox"
 	"github.com/qiniu/go-sdk/v7/storage"
 	userModel "todoList/src/models/user"
+	"todoList/src/services/captcha"
 	userService "todoList/src/services/user"
 	"todoList/src/utils/response"
 	userValidator "todoList/src/utils/validator/user"
@@ -17,6 +18,27 @@ type UserController struct {
 
 var ctx = context.Background()
 var service userService.UserService
+
+func (UserController) CaptchaVerify(request *gin.Context) {
+	id := request.Query("id")
+	value := request.Query("value")
+
+	captchaService := new(captcha.CaptchaService)
+	fmt.Println(captchaService.Verify(id, value))
+}
+
+func (UserController) CaptchaId(request *gin.Context) {
+	var response = response.Response{request}
+	captchaService := new(captcha.CaptchaService)
+	captchaID := captchaService.GenerateID()
+	response.SuccessWithData(captchaID)
+}
+
+func (UserController) CaptchaImg(request *gin.Context) {
+	captchaService := new(captcha.CaptchaService)
+	source := request.Query("source")
+	captchaService.GenerateImg(request.Writer, source)
+}
 
 func (UserController) Info(request *gin.Context) {
 	var response = response.Response{request}
@@ -140,7 +162,7 @@ func (UserController) SignUp(request *gin.Context) {
 
 	// 注册
 	user, error := service.SignUp(&form)
-	if  error != nil {
+	if error != nil {
 		response.ErrorWithMSG(fmt.Sprintf("%s", error.Error()))
 		return
 	}
@@ -261,7 +283,7 @@ func (UserController) Icon(request *gin.Context) {
 		return
 	}
 
-	if error != nil ||  user.Id != form.Id{
+	if error != nil || user.Id != form.Id {
 		response.ErrorWithMSG("上传失败")
 		return
 	}
@@ -295,7 +317,7 @@ func (UserController) Icon(request *gin.Context) {
 
 	url := storage.MakePublicURL(imgHost, ret.Key)
 	error = service.UpdateAttr(user, "icon", url)
-	if error !=nil {
+	if error != nil {
 		fmt.Println(error.Error())
 		response.ErrorWithMSG("上传失败")
 		return
