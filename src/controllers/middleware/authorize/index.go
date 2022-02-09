@@ -21,14 +21,12 @@ func (Authorize) Auth(request *gin.Context)  {
 		request.Abort()
 	}
 
-	fmt.Println(user)
-	fmt.Println(user.Id)
 	if user.Id == 0 {
 		fmt.Println("check userInfo fail")
 		response.ErrorWithDetail(499, "请先登陆", nil)
 		request.Abort()
 	}
 
-	fmt.Println("error user info")
+	fmt.Println(user)
 	request.Next()
 }

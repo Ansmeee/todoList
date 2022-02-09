@@ -84,6 +84,8 @@ func (service *UserService) FindByID(id int) (error error, data *user.UserModel)
 type SigninForm struct {
 	Account  string `form:"account"`
 	Password string `form:"password"`
+	Code     string `form:"code"`
+	Nonce    string `form:"nonce"`
 }
 
 func (service *UserService) SignOut(token string) (error error) {
@@ -164,7 +166,6 @@ func (UserService) LoginByToken(token string, data user.UserModel) bool {
 		return false
 	}
 
-
 	conf, error := cfg.Config()
 	if error != nil {
 		fmt.Println(error.Error())
@@ -186,6 +187,8 @@ type SignupForm struct {
 	PassWord string `form:"password"`
 	Auth     string `form:"auth"`
 	Way      string `form:"way"`
+	Code     string `form:"code"`
+	Nonce    string `form:"nonce"`
 }
 
 func signUpWithEmail(form *SignupForm) (data *user.UserModel, err error) {

@@ -9,7 +9,7 @@ import (
 type CaptchaService struct {}
 
 func (CaptchaService) GenerateID() string {
-	captchaID := captcha.NewLen(6)
+	captchaID := captcha.NewLen(4)
 	return captchaID
 }
 

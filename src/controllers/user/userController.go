@@ -116,6 +116,13 @@ func (UserController) SignIn(request *gin.Context) {
 		return
 	}
 
+	captchaService := new(captcha.CaptchaService)
+	captchaRes := captchaService.Verify(form.Nonce, form.Code)
+	if captchaRes == false {
+		response.ErrorWithMSG("登陆失败，验证码不正确")
+		return
+	}
+
 	token, err := service.SignIn(form)
 	if err != nil {
 		response.ErrorWithMSG(fmt.Sprintf("登录失败，%s", err.Error()))
@@ -147,6 +154,14 @@ func (UserController) SignUp(request *gin.Context) {
 		err, existUser := service.FindeByEmail(form.Account)
 		if err != nil || existUser.Id != 0 {
 			response.ErrorWithMSG(fmt.Sprintf("该邮箱已被占用"))
+			return
+		}
+
+
+		captchaService := new(captcha.CaptchaService)
+		captchaRes := captchaService.Verify(form.Nonce, form.Code)
+		if captchaRes == false {
+			response.ErrorWithMSG("验证码不正确")
 			return
 		}
 	}
