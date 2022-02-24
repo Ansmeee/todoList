@@ -5,7 +5,7 @@ import (
 )
 
 type AuthModel struct {
-	Account   int       `json:"account" form:"account" gorm:"unique"`
+	Account   int64    `json:"account" form:"account" gorm:"unique"`
 	Auth      string    `json:"auth" form:"auth"`
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime;<-:create"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`

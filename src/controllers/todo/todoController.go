@@ -53,7 +53,7 @@ func setLatestForm(request *gin.Context, form *todoService.QueryForm) {
 		}
 	}
 
-	newRules = append(newRules, []string{"status", "<=", status}, []string{"user_id", "=", strconv.Itoa(user.User().Id)})
+	newRules = append(newRules, []string{"status", "<=", status}, []string{"user_id", "=", strconv.Itoa(int(user.User().Id))})
 	form.Wheres = newRules
 }
 
@@ -84,7 +84,7 @@ func setDoneForm(request *gin.Context, form *todoService.QueryForm) {
 		}
 	}
 
-	newRules = append(newRules, []string{"status", "=", "2"}, []string{"user_id", "=", strconv.Itoa(user.User().Id)})
+	newRules = append(newRules, []string{"status", "=", "2"}, []string{"user_id", "=", strconv.Itoa(int(user.User().Id))})
 	form.Wheres = newRules
 }
 
@@ -123,7 +123,7 @@ func setDefaultForm(request *gin.Context, form *todoService.QueryForm) {
 		}
 	}
 
-	newRules = append(newRules, []string{"status", "<=", status}, []string{"user_id", "=", strconv.Itoa(user.User().Id)})
+	newRules = append(newRules, []string{"status", "<=", status}, []string{"user_id", "=", strconv.Itoa(int(user.User().Id))})
 	form.Wheres = newRules
 }
 
@@ -342,7 +342,7 @@ func (TodoController) Delete(request *gin.Context) {
 }
 
 type AttrForm struct {
-	Id    int    `form:"id"`
+	Id    int64    `form:"id"`
 	Name  string `form:"name"`
 	Value string `form:"value"`
 }

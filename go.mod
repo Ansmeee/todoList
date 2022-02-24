@@ -3,16 +3,18 @@ module todoList
 go 1.17
 
 require (
+	github.com/bwmarrin/snowflake v0.3.0
+	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f
 	github.com/gin-gonic/gin v1.7.4
 	github.com/go-redis/redis/v8 v8.11.3
 	github.com/qiniu/go-sdk/v7 v7.11.0
+	gopkg.in/ini.v1 v1.66.3
 	gorm.io/driver/mysql v1.1.2
 	gorm.io/gorm v1.21.15
 )
 
 require (
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
-	github.com/dchest/captcha v0.0.0-20200903113550-03f5f0333e1f // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
@@ -33,6 +35,5 @@ require (
 	golang.org/x/sys v0.0.0-20211020174200-9d6173849985 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
-	gopkg.in/ini.v1 v1.66.3 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

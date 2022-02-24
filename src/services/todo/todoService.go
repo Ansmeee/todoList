@@ -23,7 +23,7 @@ func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error err
 	db := database.Connect("")
 	defer database.Close(db)
 
-	uid := common.GetUID("todoUID")
+	uid := common.GetUID()
 
 	data.Id = uid
 	error = db.Model(model).Create(data).Error
@@ -96,7 +96,7 @@ func (TodoService) UpdateAttr(todo *todo.TodoModel, attrName string, attrValue i
 	return
 }
 
-func (TodoService) FindByID(id int) (todo *todo.TodoModel, error error) {
+func (TodoService) FindByID(id int64) (todo *todo.TodoModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 

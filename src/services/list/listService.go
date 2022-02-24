@@ -16,7 +16,7 @@ func (ListService) NewModel() *list.ListModel {
 	return new(list.ListModel)
 }
 
-func (ListService) FindByID(id int) (list *list.ListModel, error error) {
+func (ListService) FindByID(id int64) (list *list.ListModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
@@ -33,7 +33,7 @@ type Params struct {
 	Keywords string
 	PageSize int
 	Page     int
-	Userid   int
+	Userid   int64
 }
 
 func (ListService) List(params *Params) (total int64, data []*list.ListModel, error error) {
@@ -75,7 +75,7 @@ func (ListService) Create(list *list.ListModel) (data *list.ListModel, error err
 	db := database.Connect("")
 	defer database.Close(db)
 
-	list.Id = common.GetUID("listUID")
+	list.Id = common.GetUID()
 	error = db.Model(model).Create(list).Error
 	if error != nil {
 		return

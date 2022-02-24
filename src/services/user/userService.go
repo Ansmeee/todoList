@@ -62,7 +62,7 @@ func (service *UserService) FindeByEmail(email string) (error error, data *user.
 	return
 }
 
-func (service *UserService) FindByID(id int) (error error, data *user.UserModel) {
+func (service *UserService) FindByID(id int64) (error error, data *user.UserModel) {
 	db := database.Connect("")
 	defer database.Close(db)
 
@@ -139,7 +139,7 @@ func (service *UserService) SignIn(data *SigninForm) (token string, error error)
 	return
 }
 
-func (UserService) AuthPassword(account int, password string) (error error) {
+func (UserService) AuthPassword(account int64, password string) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
@@ -197,7 +197,7 @@ func signUpWithEmail(form *SignupForm) (data *user.UserModel, err error) {
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		newUser := new(user.UserModel)
-		newUser.Id = common.GetUID("userUID")
+		newUser.Id = common.GetUID()
 		newUser.Email = form.Account
 		if tx.Model(thisModel).Create(&newUser).Error != nil {
 			return errors.New("注册失败")
@@ -227,7 +227,7 @@ func (service *UserService) SignUp(data *SignupForm) (user *user.UserModel, erro
 }
 
 type AttrForm struct {
-	Id    int    `form:"id"`
+	Id    int64  `form:"id"`
 	Key   string `form:"key"`
 	Value string `form:"value"`
 }
@@ -378,7 +378,7 @@ func (UserService) GetUserInfoByToken(token string) (data *user.UserModel, error
 		return
 	}
 
-	var account int
+	var account int64
 	err = json.Unmarshal(cacheData, &account)
 	if err != nil {
 		error = errors.New("用户信息获取失败")
