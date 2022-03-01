@@ -124,6 +124,20 @@ func setDefaultForm(request *gin.Context, form *todoService.QueryForm) {
 	}
 
 	newRules = append(newRules, []string{"status", "<=", status}, []string{"user_id", "=", strconv.Itoa(int(user.User().Id))})
+
+	// 我的日程的搜索条件
+	if len(form.FirstDate) > 0 && len(form.LastDate) > 0 {
+		firstDate, err := time.Parse("2006-1-2", form.FirstDate)
+		lastDate, err := time.Parse("2006-1-2", form.LastDate)
+
+		fmt.Println(firstDate, lastDate)
+		if err == nil {
+			fDate := firstDate.Format("2006-01-02")
+			lDate := lastDate.Format("2006-01-02")
+			newRules = append(newRules, []string{"deadline", ">=", fDate}, []string{"deadline", "<=", lDate})
+		}
+	}
+
 	form.Wheres = newRules
 }
 
@@ -326,7 +340,7 @@ func (TodoController) Delete(request *gin.Context) {
 	}
 
 	todo, error := thisService.FindByID(form.Id)
-	if error != nil || todo.UserId != user.Id{
+	if error != nil || todo.UserId != user.Id {
 		response.ErrorWithMSG("删除失败")
 		return
 	}
@@ -342,7 +356,7 @@ func (TodoController) Delete(request *gin.Context) {
 }
 
 type AttrForm struct {
-	Id    int64    `form:"id"`
+	Id    int64  `form:"id"`
 	Name  string `form:"name"`
 	Value string `form:"value"`
 }
@@ -367,7 +381,7 @@ func (TodoController) UpdateAttr(request *gin.Context) {
 	attrValue := attrForm.Value
 
 	todo, error := thisService.FindByID(attrForm.Id)
-	if error != nil || todo.Id == 0 || todo.UserId != user.Id{
+	if error != nil || todo.Id == 0 || todo.UserId != user.Id {
 		response.ErrorWithMSG("保存失败")
 		return
 	}

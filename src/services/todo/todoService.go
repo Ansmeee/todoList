@@ -112,6 +112,8 @@ func (TodoService) FindByID(id int64) (todo *todo.TodoModel, error error) {
 type QueryForm struct {
 	From      string   `json:"from" form:"from"`
 	Keywords  string   `json:"keywords" form:"keywords"`
+	FirstDate string   `json:"first_date" form:"first_date"`
+	LastDate  string   `json:"last_date" form:"last_date"`
 	Page      int      `json:"page" form:"page"`
 	PageSize  int      `json:"page_size" form:"page_size"`
 	SortBy    string   `json:"sort_by" form:"sort_by"`
@@ -141,7 +143,11 @@ func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, er
 			}
 
 			if where[1] == "<=" {
-				db = db.Where(fmt.Sprintf("`%s` <= %s", where[0], where[2]))
+				db = db.Where(fmt.Sprintf("`%s` <= '%s'", where[0], where[2]))
+			}
+
+			if where[1] == ">=" {
+				db = db.Where(fmt.Sprintf("`%s` >= '%s'", where[0], where[2]))
 			}
 
 		}
