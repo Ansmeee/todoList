@@ -62,7 +62,7 @@ func (service *UserService) FindeByEmail(email string) (error error, data *user.
 	return
 }
 
-func (service *UserService) FindByID(id int64) (error error, data *user.UserModel) {
+func (service *UserService) FindByID(id string) (error error, data *user.UserModel) {
 	db := database.Connect("")
 	defer database.Close(db)
 
@@ -108,7 +108,7 @@ func (service *UserService) SignIn(data *SigninForm) (token string, error error)
 		return
 	}
 
-	if userInfo.Id == 0 {
+	if len(userInfo.Id) == 0 {
 		error = errors.New("该用户不存在")
 		return
 	}
@@ -139,7 +139,7 @@ func (service *UserService) SignIn(data *SigninForm) (token string, error error)
 	return
 }
 
-func (UserService) AuthPassword(account int64, password string) (error error) {
+func (UserService) AuthPassword(account, password string) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
@@ -227,7 +227,7 @@ func (service *UserService) SignUp(data *SignupForm) (user *user.UserModel, erro
 }
 
 type AttrForm struct {
-	Id    int64  `form:"id"`
+	Id    string  `form:"id"`
 	Key   string `form:"key"`
 	Value string `form:"value"`
 }
@@ -378,14 +378,14 @@ func (UserService) GetUserInfoByToken(token string) (data *user.UserModel, error
 		return
 	}
 
-	var account int64
+	var account string
 	err = json.Unmarshal(cacheData, &account)
 	if err != nil {
 		error = errors.New("用户信息获取失败")
 		return
 	}
 
-	if account == 0 {
+	if account == "" {
 		error = errors.New("用户信息获取失败")
 		return
 	}

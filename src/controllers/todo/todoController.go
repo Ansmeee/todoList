@@ -3,7 +3,6 @@ package todo
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"strconv"
 	"time"
 	"todoList/src/models/todo"
 	"todoList/src/models/user"
@@ -53,7 +52,7 @@ func setLatestForm(request *gin.Context, form *todoService.QueryForm) {
 		}
 	}
 
-	newRules = append(newRules, []string{"status", "<=", status}, []string{"user_id", "=", strconv.Itoa(int(user.User().Id))})
+	newRules = append(newRules, []string{"status", "<=", status}, []string{"user_id", "=", user.User().Id})
 	form.Wheres = newRules
 }
 
@@ -84,7 +83,7 @@ func setDoneForm(request *gin.Context, form *todoService.QueryForm) {
 		}
 	}
 
-	newRules = append(newRules, []string{"status", "=", "2"}, []string{"user_id", "=", strconv.Itoa(int(user.User().Id))})
+	newRules = append(newRules, []string{"status", "=", "2"}, []string{"user_id", "=", user.User().Id})
 	form.Wheres = newRules
 }
 
@@ -123,7 +122,7 @@ func setDefaultForm(request *gin.Context, form *todoService.QueryForm) {
 		}
 	}
 
-	newRules = append(newRules, []string{"status", "<=", status}, []string{"user_id", "=", strconv.Itoa(int(user.User().Id))})
+	newRules = append(newRules, []string{"status", "<=", status}, []string{"user_id", "=", user.User().Id})
 
 	// 我的日程的搜索条件
 	if len(form.FirstDate) > 0 && len(form.LastDate) > 0 {
@@ -146,7 +145,7 @@ func (TodoController) List(request *gin.Context) {
 	var error error
 
 	user := user.User()
-	if user.Id == 0 {
+	if user.Id == "" {
 		response.ErrorWithMSG("请先登陆")
 		return
 	}
@@ -181,6 +180,7 @@ func (TodoController) List(request *gin.Context) {
 		"total": total,
 	}
 
+	fmt.Println(data)
 	response.SuccessWithData(responseData)
 	return
 }
@@ -190,7 +190,7 @@ func (TodoController) Create(request *gin.Context) {
 	var error error
 
 	user := user.User()
-	if user.Id == 0 {
+	if user.Id == "" {
 		response.ErrorWithMSG("请先登陆")
 		return
 	}
@@ -209,14 +209,14 @@ func (TodoController) Create(request *gin.Context) {
 		return
 	}
 
-	if todo.ListId != 0 {
+	if todo.ListId != "" {
 		list, error := listService.FindByID(todo.ListId)
 		if error != nil {
 			response.ErrorWithMSG("创建失败，请重试")
 			return
 		}
 
-		if list.Id == 0 {
+		if list.Id == "" {
 			response.ErrorWithMSG("创建失败，请重试")
 			return
 		}
@@ -249,14 +249,14 @@ func (TodoController) Detail(request *gin.Context) {
 	var error error
 
 	user := user.User()
-	if user.Id == 0 {
+	if user.Id == "" {
 		response.ErrorWithMSG("请先登陆")
 		return
 	}
 
 	todo := thisService.NewModel()
 	error = request.ShouldBindUri(todo)
-	if error != nil || todo.Id == 0 {
+	if error != nil || todo.Id == "" {
 		response.ErrorWithMSG("获取失败，请重试")
 		return
 	}
@@ -275,7 +275,7 @@ func (TodoController) Update(request *gin.Context) {
 	var error error
 
 	user := user.User()
-	if user.Id == 0 {
+	if user.Id == "" {
 		response.ErrorWithMSG("请先登陆")
 		return
 	}
@@ -284,12 +284,13 @@ func (TodoController) Update(request *gin.Context) {
 	error = request.ShouldBind(form)
 
 	if error != nil {
+		fmt.Println(error.Error())
 		response.ErrorWithMSG("保存失败")
 		return
 	}
 
 	todo, error := thisService.FindByID(form.Id)
-	if error != nil || todo.Id == 0 || todo.UserId != user.Id {
+	if error != nil || todo.Id == "" || todo.UserId != user.Id {
 		response.ErrorWithMSG("保存失败")
 		return
 	}
@@ -298,14 +299,14 @@ func (TodoController) Update(request *gin.Context) {
 		form.Title = "未命名"
 	}
 
-	if form.ListId != 0 {
+	if form.ListId != "" {
 		list, error := listService.FindByID(form.ListId)
 		if error != nil {
 			response.ErrorWithMSG("更新失败")
 			return
 		}
 
-		if list.Id == 0 {
+		if list.Id == "" {
 			response.ErrorWithMSG("更新失败")
 			return
 		}
@@ -327,7 +328,7 @@ func (TodoController) Update(request *gin.Context) {
 func (TodoController) Delete(request *gin.Context) {
 	response := response.Response{request}
 	user := user.User()
-	if user.Id == 0 {
+	if user.Id == "" {
 		response.ErrorWithMSG("请先登陆")
 		return
 	}
@@ -356,7 +357,7 @@ func (TodoController) Delete(request *gin.Context) {
 }
 
 type AttrForm struct {
-	Id    int64  `form:"id"`
+	Id    string  `form:"id"`
 	Name  string `form:"name"`
 	Value string `form:"value"`
 }
@@ -365,7 +366,7 @@ func (TodoController) UpdateAttr(request *gin.Context) {
 	response := response.Response{request}
 
 	user := user.User()
-	if user.Id == 0 {
+	if user.Id == "" {
 		response.ErrorWithMSG("请先登陆")
 		return
 	}
@@ -381,7 +382,7 @@ func (TodoController) UpdateAttr(request *gin.Context) {
 	attrValue := attrForm.Value
 
 	todo, error := thisService.FindByID(attrForm.Id)
-	if error != nil || todo.Id == 0 || todo.UserId != user.Id {
+	if error != nil || todo.Id == "" || todo.UserId != user.Id {
 		response.ErrorWithMSG("保存失败")
 		return
 	}

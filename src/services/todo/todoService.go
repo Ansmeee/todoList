@@ -96,7 +96,7 @@ func (TodoService) UpdateAttr(todo *todo.TodoModel, attrName string, attrValue i
 	return
 }
 
-func (TodoService) FindByID(id int64) (todo *todo.TodoModel, error error) {
+func (TodoService) FindByID(id string) (todo *todo.TodoModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 

@@ -7,7 +7,7 @@ type ListModel struct {
 	Color  string `json:"color" form:"color"`
 	Hide   uint   `json:"hide" form:"hide"`
 	Type   string `json:"type" form:"type"`
-	UserId int64    `json:"user_id" gorm:"<-:create"`
+	UserId string `json:"user_id" gorm:"<-:create"`
 	models.Model
 }
 

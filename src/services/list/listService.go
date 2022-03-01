@@ -16,7 +16,7 @@ func (ListService) NewModel() *list.ListModel {
 	return new(list.ListModel)
 }
 
-func (ListService) FindByID(id int64) (list *list.ListModel, error error) {
+func (ListService) FindByID(id string) (list *list.ListModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
@@ -33,7 +33,7 @@ type Params struct {
 	Keywords string
 	PageSize int
 	Page     int
-	Userid   int64
+	Userid   string
 }
 
 func (ListService) List(params *Params) (total int64, data []*list.ListModel, error error) {
@@ -46,7 +46,7 @@ func (ListService) List(params *Params) (total int64, data []*list.ListModel, er
 
 	query := db.Model(model)
 
-	if params.Userid != 0 {
+	if params.Userid != "" {
 		query = query.Where("user_id = ?", params.Userid)
 	}
 
@@ -89,7 +89,7 @@ func (ListService) Update(list, data *list.ListModel) (result *list.ListModel, e
 	db := database.Connect("")
 	defer database.Close(db)
 
-	if list.Id == 0 {
+	if len(list.Id) == 0 {
 		error = errors.New("清单不存在")
 		return
 	}
@@ -108,7 +108,7 @@ func (ListService) Delete(list *list.ListModel) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
-	if list.Id == 0 {
+	if len(list.Id) == 0  {
 		error = errors.New("清单不存在")
 		return
 	}

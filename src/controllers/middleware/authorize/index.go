@@ -21,7 +21,7 @@ func (Authorize) Auth(request *gin.Context)  {
 		request.Abort()
 	}
 
-	if user.Id == 0 {
+	if len(user.Id) == 0 {
 		fmt.Println("check userInfo fail")
 		response.ErrorWithDetail(499, "请先登陆", nil)
 		request.Abort()

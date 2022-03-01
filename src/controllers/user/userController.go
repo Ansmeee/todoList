@@ -152,7 +152,7 @@ func (UserController) SignUp(request *gin.Context) {
 
 	if form.Way == "email" {
 		err, existUser := service.FindeByEmail(form.Account)
-		if err != nil || existUser.Id != 0 {
+		if err != nil || existUser.Id != "" {
 			response.ErrorWithMSG(fmt.Sprintf("该邮箱已被占用"))
 			return
 		}
@@ -202,7 +202,7 @@ func (UserController) UpdateAttr(request *gin.Context) {
 	response := response.Response{request}
 
 	user := userModel.User()
-	if user.Id == 0 {
+	if user.Id == "" {
 		response.ErrorWithMSG("请先登陆")
 		return
 	}
@@ -285,7 +285,7 @@ func (UserController) Icon(request *gin.Context) {
 	response := response.Response{request}
 
 	user := userModel.User()
-	if user.Id == 0 {
+	if user.Id == "" {
 		response.ErrorWithMSG("请先登陆")
 		return
 	}

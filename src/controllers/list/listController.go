@@ -17,7 +17,7 @@ func (ListController) List(request *gin.Context)  {
 	var error error
 
 	user := user.User()
-	if user.Id == 0 {
+	if len(user.Id) == 0 {
 		response.ErrorWithMSG("请先登陆")
 		return
 	}
@@ -49,7 +49,7 @@ func (ListController) Create(request *gin.Context) {
 	var error error
 
 	user := user.User()
-	if user.Id == 0 {
+	if len(user.Id) == 0 {
 		response.ErrorWithMSG("请先登陆")
 		return
 	}
@@ -83,7 +83,7 @@ func (ListController) Update(request *gin.Context)  {
 	var error error
 
 	user := user.User()
-	if user.Id == 0 {
+	if len(user.Id) == 0 {
 		response.ErrorWithMSG("请先登陆")
 		return
 	}
@@ -128,7 +128,7 @@ func (ListController) Delete(request *gin.Context)  {
 	var error error
 
 	user := user.User()
-	if user.Id == 0 {
+	if user.Id == "" {
 		response.ErrorWithMSG("请先登陆")
 		return
 	}

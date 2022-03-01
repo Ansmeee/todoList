@@ -12,7 +12,7 @@ import (
 
 var ctx = context.Background()
 
-func GetUID() (uid int64) {
+func GetUID() (uid string) {
 
 	cfg, _ := config.Config()
 	nodeID := cfg.Section("environment").Key("app_node").String()
@@ -28,7 +28,7 @@ func GetUID() (uid int64) {
 		return
 	}
 
-	uid = node.Generate().Int64()
+	uid = node.Generate().String()
 	return
 }
 
