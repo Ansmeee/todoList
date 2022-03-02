@@ -180,7 +180,6 @@ func (TodoController) List(request *gin.Context) {
 		"total": total,
 	}
 
-	fmt.Println(data)
 	response.SuccessWithData(responseData)
 	return
 }
