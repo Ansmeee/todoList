@@ -2,10 +2,13 @@ package user
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/qiniu/go-sdk/v7/auth/qbox"
-	"github.com/qiniu/go-sdk/v7/storage"
+	"os"
+	"path"
+	"strings"
+	cfg "todoList/config"
 	userModel "todoList/src/models/user"
 	"todoList/src/services/captcha"
 	userService "todoList/src/services/user"
@@ -157,7 +160,6 @@ func (UserController) SignUp(request *gin.Context) {
 			return
 		}
 
-
 		captchaService := new(captcha.CaptchaService)
 		captchaRes := captchaService.Verify(form.Nonce, form.Code)
 		if captchaRes == false {
@@ -281,6 +283,49 @@ func (UserController) Delete(request *gin.Context) {
 	response.Success()
 }
 
+func (UserController) ShowIcon(request *gin.Context)  {
+	response := response.Response{request}
+
+	fmt.Println("here")
+	icon := request.Param("icon")
+
+	iconPath, error := service.GenerateLocalIconPath()
+	if error != nil {
+		response.ErrorWithMSG("获取失败")
+	}
+
+
+	file := fmt.Sprintf("%s/%s", iconPath, icon)
+	_, error = os.Stat(file)
+	if error != nil {
+		response.ErrorWithMSG("头像加载失败")
+		return
+	}
+
+	var HttpContentType = map[string]string{
+		".avi": "video/avi",
+		".mp3": "   audio/mp3",
+		".mp4": "video/mp4",
+		".wmv": "   video/x-ms-wmv",
+		".asf":  "video/x-ms-asf",
+		".rm":   "application/vnd.rn-realmedia",
+		".rmvb": "application/vnd.rn-realmedia-vbr",
+		".mov":  "video/quicktime",
+		".m4v":  "video/mp4",
+		".flv":  "video/x-flv",
+		".jpg":  "image/jpeg",
+		".png":  "image/png",
+	}
+
+	fileNameWithSuffix := path.Base(file)
+	fileType := path.Ext(fileNameWithSuffix)
+	//获取文件类型对应的http ContentType 类型
+	fileContentType := HttpContentType[fileType]
+
+	request.Header("Content-Type", fileContentType)
+	request.File(file)
+}
+
 func (UserController) Icon(request *gin.Context) {
 	response := response.Response{request}
 
@@ -309,33 +354,43 @@ func (UserController) Icon(request *gin.Context) {
 		return
 	}
 
-	putPolicy := storage.PutPolicy{Scope: "ansmetodolist"}
-	mac := qbox.NewMac("grcCCRTRuJwq0OKb4VUbxZm5L2_FQlJyUex0mN85", "EYd181-l6Rc5yvGNtszmHvurp9qiaYsfGgVktF5f")
-	upToken := putPolicy.UploadToken(mac)
-
-	cfg := storage.Config{
-		Zone:          &storage.ZoneHuabei,
-		UseCdnDomains: false,
-	}
-
-	imgHost := "http://r646b3gyv.hb-bkt.clouddn.com"
-	fileSize := fileHeader.Size
-	putExtra := storage.PutExtra{}
-	formUploader := storage.NewFormUploader(&cfg)
-	ret := storage.PutRet{}
-	err := formUploader.PutWithoutKey(ctx, &ret, upToken, file, fileSize, &putExtra)
-	if err != nil {
-		fmt.Println(err.Error())
+	conf, error := cfg.Config()
+	if error != nil {
 		response.ErrorWithMSG("上传失败")
 		return
 	}
 
-	url := storage.MakePublicURL(imgHost, ret.Key)
+	saveHandler := conf.Section("environment").Key("icon_save_handler").String()
+
+	var url = ""
+	if "QN" == saveHandler {
+		url, error = service.SaveIcon2QN(file, fileHeader)
+	} else {
+		iconPath, error := service.GenerateLocalIconPath()
+		if error != nil {
+			response.ErrorWithMSG("上传失败")
+		}
+
+		ext := path.Ext(fileHeader.Filename)
+		name := fmt.Sprintf("%x", md5.Sum([]byte(user.Id)))
+		fileName := fmt.Sprintf("%s%s", name, ext)
+		savePath := fmt.Sprintf("/%s/%s", strings.Trim(iconPath, "/"), fileName)
+
+		error = request.SaveUploadedFile(fileHeader, savePath)
+
+		host := conf.Section("environment").Key("app_host").String()
+		url = fmt.Sprintf("%s/rest/user/icon/%s", host, fileName)
+	}
+
+	if error != nil {
+		fmt.Println(error.Error())
+		response.ErrorWithMSG("上传失败")
+	}
+
 	error = service.UpdateAttr(user, "icon", url)
 	if error != nil {
 		fmt.Println(error.Error())
 		response.ErrorWithMSG("上传失败")
-		return
 	}
 
 	response.SuccessWithData(url)

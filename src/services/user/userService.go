@@ -8,7 +8,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/qiniu/go-sdk/v7/auth/qbox"
+	"github.com/qiniu/go-sdk/v7/storage"
 	"gorm.io/gorm"
+	"mime/multipart"
+	"os"
 	"strings"
 	"time"
 	cfg "todoList/config"
@@ -54,7 +58,7 @@ func (service *UserService) FindeByEmail(email string) (error error, data *user.
 		return
 	}
 
-	err = rebuildCacke(userCacheKey, *data)
+	err = rebuildCache(userCacheKey, *data)
 	if err != nil {
 		fmt.Println("缓存更新失败")
 	}
@@ -259,14 +263,14 @@ func (service *UserService) Update(user, data *user.UserModel) (error error) {
 		error = errors.New("系统异常")
 	}
 
-	if err := rebuildCacke(userCacheKey, user); err != nil {
+	if err := rebuildCache(userCacheKey, user); err != nil {
 		error = errors.New("缓存更新失败")
 	}
 
 	return
 }
 
-func rebuildCacke(cacheKey string, data interface{}) (error error) {
+func rebuildCache(cacheKey string, data interface{}) (error error) {
 	client := redis.Connect()
 	defer redis.Close(client)
 
@@ -391,5 +395,68 @@ func (UserService) GetUserInfoByToken(token string) (data *user.UserModel, error
 	}
 
 	err, data = thisService.FindByID(account)
+	return
+}
+
+func (UserService) GenerateLocalIconPath() (url string, error error) {
+	conf, error := cfg.Config()
+	if error != nil {
+		return
+	}
+
+	iconPath := conf.Section("environment").Key("icon_path").String()
+	if "" == iconPath {
+		fmt.Println("用户头像文件路径配置异常")
+		error = errors.New("上传失败")
+		return
+	}
+
+	_, error = os.Stat(iconPath)
+	if error != nil {
+		if os.IsNotExist(error) {
+
+			error = os.MkdirAll(iconPath, os.ModePerm)
+
+			if error != nil {
+				fmt.Println("用户头像文件路径创建失败")
+				error = errors.New("上传失败")
+				return
+			}
+		} else {
+			if error != nil {
+				fmt.Println("用户头像文件路径创建失败")
+				error = errors.New("上传失败")
+				return
+			}
+		}
+	}
+
+	url = iconPath
+	return
+}
+
+func (UserService) SaveIcon2QN(file multipart.File, fileHeader *multipart.FileHeader) (url string, error error) {
+	putPolicy := storage.PutPolicy{Scope: "ansmetodolist"}
+	mac := qbox.NewMac("grcCCRTRuJwq0OKb4VUbxZm5L2_FQlJyUex0mN85", "EYd181-l6Rc5yvGNtszmHvurp9qiaYsfGgVktF5f")
+	upToken := putPolicy.UploadToken(mac)
+
+	cfg := storage.Config{
+		Zone:          &storage.ZoneHuabei,
+		UseCdnDomains: false,
+	}
+
+	imgHost := "http://r646b3gyv.hb-bkt.clouddn.com"
+	fileSize := fileHeader.Size
+	putExtra := storage.PutExtra{}
+	formUploader := storage.NewFormUploader(&cfg)
+	ret := storage.PutRet{}
+	err := formUploader.PutWithoutKey(ctx, &ret, upToken, file, fileSize, &putExtra)
+	if err != nil {
+		fmt.Println(err.Error())
+		error = errors.New("上传失败")
+		return
+	}
+
+	url = storage.MakePublicURL(imgHost, ret.Key)
 	return
 }
