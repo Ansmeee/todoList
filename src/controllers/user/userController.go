@@ -294,7 +294,6 @@ func (UserController) ShowIcon(request *gin.Context)  {
 		response.ErrorWithMSG("获取失败")
 	}
 
-
 	file := fmt.Sprintf("%s/%s", iconPath, icon)
 	_, error = os.Stat(file)
 	if error != nil {
@@ -319,8 +318,11 @@ func (UserController) ShowIcon(request *gin.Context)  {
 
 	fileNameWithSuffix := path.Base(file)
 	fileType := path.Ext(fileNameWithSuffix)
-	//获取文件类型对应的http ContentType 类型
-	fileContentType := HttpContentType[fileType]
+	fileContentType, ok := HttpContentType[fileType]
+	if !ok {
+		response.ErrorWithMSG("头像加载失败")
+		return
+	}
 
 	request.Header("Content-Type", fileContentType)
 	request.File(file)
@@ -354,6 +356,18 @@ func (UserController) Icon(request *gin.Context) {
 		return
 	}
 
+	if fileHeader.Size > 1024 * 1024 * 2 {
+		response.ErrorWithMSG("图片太大了")
+		return
+	}
+
+	enableImgTypes := map[string]bool{".png": true, ".jpg": true, ".jpeg": true}
+	ext := path.Ext(fileHeader.Filename)
+	if _, ok := enableImgTypes[ext]; !ok {
+		response.ErrorWithMSG("只能上传 .png .jpg .jpeg 类型的图片")
+		return
+	}
+
 	conf, error := cfg.Config()
 	if error != nil {
 		response.ErrorWithMSG("上传失败")
@@ -371,7 +385,6 @@ func (UserController) Icon(request *gin.Context) {
 			response.ErrorWithMSG("上传失败")
 		}
 
-		ext := path.Ext(fileHeader.Filename)
 		name := fmt.Sprintf("%x", md5.Sum([]byte(user.Id)))
 		fileName := fmt.Sprintf("%s%s", name, ext)
 		savePath := fmt.Sprintf("/%s/%s", strings.Trim(iconPath, "/"), fileName)
