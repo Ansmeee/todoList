@@ -24,3 +24,11 @@ func (AuthModel) SetUser(userInfo *UserModel) {
 func User() *UserModel {
 	return user
 }
+
+func Active() bool {
+	if user.Id != "" {
+		return true
+	}
+
+	return false
+}
