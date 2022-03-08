@@ -15,5 +15,6 @@ func (*MsgRouter) InitRouter(router gin.IRoutes) {
 
 	controller := new(msgController.MsgController)
 	router.GET("msg", controller.List)
+	router.GET("msg/unread", controller.Unread)
 	router.PUT("msg/:id", controller.UpdateAttr)
 }

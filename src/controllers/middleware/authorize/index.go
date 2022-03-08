@@ -27,6 +27,5 @@ func (Authorize) Auth(request *gin.Context)  {
 		request.Abort()
 	}
 
-	fmt.Println(user)
 	request.Next()
 }

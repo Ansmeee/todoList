@@ -36,6 +36,14 @@ func (MsgController) List(request *gin.Context) {
 	return
 }
 
+func (MsgController) Unread(request *gin.Context)  {
+	response := response.Response{request}
+
+	count := service.UnreadCount()
+	data := map[string]int64{"count": count}
+	response.SuccessWithData(data)
+}
+
 func (MsgController) UpdateAttr(request *gin.Context) {
 	response := response.Response{request}
 

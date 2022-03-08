@@ -2,6 +2,7 @@ package msgService
 
 import (
 	"todoList/src/models/msgModel"
+	"todoList/src/models/user"
 	"todoList/src/utils/database"
 )
 
@@ -23,6 +24,16 @@ func (MsgService) FindByID(id string) (msg *msgModel.MsgModel, error error) {
 	}
 
 	return
+}
+
+func (MsgService) UnreadCount() int64 {
+	db := database.Connect("")
+	defer database.Close(db)
+
+	var count int64 = 0
+	user := user.User()
+	db.Model(MsgService{}.NewMsgModel()).Where("user_id = ? and status = ?", user.Id, msgModel.StatusUnread).Count(&count)
+	return count
 }
 
 type ListForm struct {
