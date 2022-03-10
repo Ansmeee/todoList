@@ -48,19 +48,14 @@ func (MsgController) UpdateAttr(request *gin.Context) {
 	response := response.Response{request}
 
 	form := new(msgService.AttrForm)
-	error := request.ShouldBindUri(form)
+	error := request.ShouldBind(form)
 	if error != nil {
 		response.Success()
 		return
 	}
 
-	error = request.ShouldBind(form)
-	if error != nil {
-		response.Success()
-		return
-	}
-
-	msg, error := service.FindByID(form.Id)
+	id := request.Param("id")
+	msg, error := service.FindByID(id)
 	if error != nil {
 		response.Success()
 		return

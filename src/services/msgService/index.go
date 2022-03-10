@@ -1,6 +1,7 @@
 package msgService
 
 import (
+	"fmt"
 	"todoList/src/models/msgModel"
 	"todoList/src/models/user"
 	"todoList/src/utils/database"
@@ -8,7 +9,7 @@ import (
 
 type MsgService struct{}
 
-
+var service = &MsgService{}
 func (MsgService) NewMsgModel() (*msgModel.MsgModel) {
 	return new(msgModel.MsgModel)
 }
@@ -17,9 +18,10 @@ func (MsgService) FindByID(id string) (msg *msgModel.MsgModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
-	msg = MsgService{}.NewMsgModel()
-	error = db.Where("uid = ?", id).Find(msg).Error
+	msg = service.NewMsgModel()
+	error = db.Where("uid = ?", id).Find(msg).Limit(1).Error
 	if error != nil {
+		fmt.Println(error.Error())
 		return
 	}
 
