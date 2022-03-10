@@ -1,8 +1,12 @@
 package feedbackController
 
 import (
+	"crypto/md5"
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"mime/multipart"
+	"path"
+	"strings"
+	"todoList/src/models/user"
 	"todoList/src/services/feedbackService"
 	"todoList/src/utils/response"
 )
@@ -27,13 +31,25 @@ func (FeedbackController) Create(request *gin.Context)  {
 		return
 	}
 
-	var fileList = []*multipart.FileHeader{}
+	var imgList = []string{}
 	files := multipartForm.File["imgs[]"]
-	for _, file := range files{
-		fileList = append(fileList, file)
+	if len(files) > 0 {
+		savePath := service.GenerateSavePath(user.User().Id)
+		if savePath == ""{
+			response.ErrorWithMSG("吐槽失败，再来一次")
+			return
+		}
+
+		for _, file := range files {
+			fileName := fmt.Sprintf("%s%s", fmt.Sprintf("%x", md5.Sum([]byte(path.Base(file.Filename)))), path.Ext(file.Filename))
+			filePath := fmt.Sprintf("%s/%s", savePath, fileName)
+			request.SaveUploadedFile(file, filePath)
+			imgList = append(imgList, fileName)
+		}
 	}
 
-	error = service.Create(request, form, fileList)
+	form.Imgs = strings.Join(imgList, ";")
+	error = service.Create(form)
 	if error != nil {
 		response.ErrorWithMSG("吐槽失败，再来一次")
 		return

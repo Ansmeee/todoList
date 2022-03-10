@@ -1,13 +1,9 @@
 package feedbackService
 
 import (
-	"crypto/md5"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"mime/multipart"
 	"os"
-	"path"
 	cfg "todoList/config"
 	"todoList/src/models/feedbackModel"
 	"todoList/src/models/user"
@@ -26,7 +22,7 @@ type CreateForm struct {
 func NewModel() *feedbackModel.FeedbackModel {
 	return new(feedbackModel.FeedbackModel)
 }
-func (FeedbackService) Create(request *gin.Context, form *CreateForm, fileList []*multipart.FileHeader) (error error) {
+func (FeedbackService) Create(form *CreateForm) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
@@ -40,31 +36,13 @@ func (FeedbackService) Create(request *gin.Context, form *CreateForm, fileList [
 	feedback.Id = common.GetUID()
 	feedback.UserId = user.Id
 	feedback.Content = form.Content
+	feedback.Imgs = form.Imgs
 
-
-	var imgList = []string{}
-	if len(fileList) > 0 {
-		savePath := generateSavePath(user.Id)
-		if savePath == ""{
-			error = errors.New("反馈文件系统异常")
-			return
-		}
-
-
-		for _, file := range fileList {
-			fileName := fmt.Sprintf("%s%s", fmt.Sprintf("%x", md5.Sum([]byte(path.Base(file.Filename)))), path.Ext(file.Filename))
-			filePath := fmt.Sprintf("%s/%s", fileName)
-			error = request.SaveUploadedFile(file, filePath)
-			fmt.Println(error.Error())
-		}
-	}
-
-	feedback.Imgs
 	error = db.Model(feedback).Create(feedback).Error
 	return
 }
 
-func generateSavePath(prefix string) string {
+func (FeedbackService) GenerateSavePath(prefix string) string {
 	config, error := cfg.Config()
 	if error != nil {
 		return ""
