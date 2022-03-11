@@ -39,6 +39,7 @@ func (FeedbackService) Create(form *CreateForm) (error error) {
 	feedback.Imgs = form.Imgs
 
 	error = db.Model(feedback).Create(feedback).Error
+
 	return
 }
 

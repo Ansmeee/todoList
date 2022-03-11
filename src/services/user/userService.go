@@ -230,6 +230,47 @@ func (service *UserService) SignUp(data *SignupForm) (user *user.UserModel, erro
 	return
 }
 
+type ResetPassForm struct {
+	Password string `form:"password"`
+	Auth     string `form:"auth"`
+	Account  string `form:"account"`
+}
+
+func (UserService) ResetPass(form *ResetPassForm) (error error) {
+	if user.User().Id != form.Account {
+		error = errors.New("用户信息异常")
+		return
+	}
+
+	if form.Password != form.Auth {
+		error = errors.New("两次输入的密码不一致")
+		return
+	}
+
+	db := database.Connect("")
+	defer database.Close(db)
+
+	userauth := new(user.AuthModel)
+
+	if err := db.Model(userauth).Where("account = ?", user.User().Id).Find(userauth).Limit(1).Error; err != nil {
+		fmt.Println(error.Error())
+		error = errors.New("用户信息异常")
+		return
+	}
+
+	if form.Password == userauth.Auth {
+		error = errors.New("新密码与旧密码不能相同")
+		return
+	}
+
+	if err := db.Model(&userauth).Where("account = ?", user.User().Id).Update("auth", form.Password).Error; err != nil {
+		error = errors.New("密码重置失败")
+		return
+	}
+
+	return
+}
+
 type AttrForm struct {
 	Id    string  `form:"id"`
 	Key   string `form:"key"`

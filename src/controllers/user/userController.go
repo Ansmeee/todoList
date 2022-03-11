@@ -200,6 +200,29 @@ func (UserController) SignUp(request *gin.Context) {
 	response.SuccessWithData(data)
 }
 
+func (UserController) ResetPass(request *gin.Context)  {
+	response := response.Response{request}
+
+	form := new(userService.ResetPassForm)
+	error := request.ShouldBind(form)
+	if error != nil {
+		response.ErrorWithMSG("提交的信息有误，密码重置失败")
+		return
+	}
+
+	fmt.Println(form)
+	error = service.ResetPass(form)
+	if error != nil {
+		response.ErrorWithMSG(error.Error())
+		return
+	}
+
+	token := request.GetHeader("Authorization")
+	error = service.SignOut(token)
+
+	response.Success()
+}
+
 func (UserController) UpdateAttr(request *gin.Context) {
 	response := response.Response{request}
 
