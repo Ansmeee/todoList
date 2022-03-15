@@ -393,10 +393,18 @@ func (UserService) GenerateToken(userInfo *user.UserModel) (token string, error 
 	headerByte, _ := json.Marshal(header)
 	encodingHeader := base64.StdEncoding.EncodeToString(headerByte)
 
+	conf, error := cfg.Config()
+	if error != nil {
+		fmt.Println(error.Error())
+		return
+	}
+
+	tokenLifeTime := conf.Section("cache").Key("token_life_time").MustInt(86400)
+	expireTime := time.Hour * time.Duration(tokenLifeTime / 60 / 60)
 	payload := map[string]interface{}{
 		"account":   userInfo.Id,
 		"name":      userInfo.Name,
-		"expiredat": time.Now().Add(24 * time.Hour),
+		"expiredat": time.Now().Add(expireTime),
 		"icon":      userInfo.Icon,
 	}
 	payloadByte, _ := json.Marshal(payload)
