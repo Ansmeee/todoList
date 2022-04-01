@@ -39,7 +39,6 @@ func (Validator) Validate(data interface{}, rules Rule) (error error) {
 						error = errors.New(fmt.Sprintf("%s 邮箱格式不正确", currentTag.Name))
 						return
 					}
-
 				}
 			}
 		}

@@ -1,6 +1,7 @@
 package msgService
 
 import (
+	"errors"
 	"fmt"
 	"todoList/src/models/msgModel"
 	"todoList/src/models/user"
@@ -66,6 +67,18 @@ func (MsgService) Update(msg *msgModel.MsgModel, attrName string, attrValue inte
 	updateData := map[string]interface{}{attrName: attrValue}
 	error = db.Model(msg).Where("uid = ?", msg.Id).Updates(updateData).Error
 	return
+}
+
+func (MsgService) Create(data *msgModel.MsgModel) error {
+	db := database.Connect("")
+	defer database.Close(db)
+
+	if error :=db.Model(&msgModel.MsgModel{}).Create(data).Error; error != nil {
+		fmt.Println("MsgService Create Error:", error.Error())
+		return errors.New("创建失败")
+	}
+
+	return nil
 }
 
 func paginate(formPage, formPageSize int) (int, int) {
