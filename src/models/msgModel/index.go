@@ -12,10 +12,11 @@ type MsgModel struct {
 }
 
 const (
-	StatusUnread = 1
-	StatusRead   = 2
+	STATUS_UNREAD = 1
+	STATUS_READ   = 2
 
-	Force = 2
+	FORCE    = 2
+	UN_FORCE = 1
 )
 
 func (MsgModel) TableName() string {

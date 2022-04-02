@@ -34,12 +34,13 @@ func main() {
 		data := msgSvc.NewMsgModel()
 		data.Id = common.GetUID()
 		data.UserId = todo.UserId
-		data.Status = msgModel.StatusUnread
+		data.Status = msgModel.STATUS_UNREAD
 		data.Link = fmt.Sprintf("/dir/%s?s_id=%s", todo.ListId, todo.Id)
 		if todo.Deadline == sDate {
-			data.Force = msgModel.Force
+			data.Force = msgModel.FORCE
 			data.Content = fmt.Sprintf("%s", todo.Title)
 		} else {
+			data.Force = msgModel.UN_FORCE
 			deadline, _ := time.Parse("2006-01-02", todo.Deadline)
 			currentTime, _ := time.Parse("2006-01-02", sDate)
 			subDay := int(deadline.Sub(currentTime).Hours() / 24)

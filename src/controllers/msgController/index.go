@@ -66,7 +66,7 @@ func (MsgController) UpdateAttr(request *gin.Context) {
 		return
 	}
 
-	if msg.Status == msgModel.StatusRead {
+	if msg.Status == msgModel.STATUS_READ {
 		response.Success()
 		return
 	}

@@ -36,7 +36,7 @@ func (MsgService) UnreadCount() int64 {
 
 	var count int64 = 0
 	user := user.User()
-	db.Model(MsgService{}.NewMsgModel()).Where("user_id = ? and status = ?", user.Id, msgModel.StatusUnread).Count(&count)
+	db.Model(MsgService{}.NewMsgModel()).Where("user_id = ? and status = ?", user.Id, msgModel.STATUS_UNREAD).Count(&count)
 	return count
 }
 
