@@ -4,4 +4,4 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /Users/wenjun/dev/todoo/bin/to
 
 command
 
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /Users/wenjun/dev/todoo/bin/task-command
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /Users/wenjun/dev/todoo/bin/task-command-daily

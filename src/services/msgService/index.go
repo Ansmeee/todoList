@@ -11,7 +11,8 @@ import (
 type MsgService struct{}
 
 var service = &MsgService{}
-func (MsgService) NewMsgModel() (*msgModel.MsgModel) {
+
+func (MsgService) NewMsgModel() *msgModel.MsgModel {
 	return new(msgModel.MsgModel)
 }
 
@@ -42,13 +43,30 @@ func (MsgService) UnreadCount() int64 {
 type ListForm struct {
 	PageSize int `form:"page_size"`
 	Page     int `form:"page"`
+	Status   int `form:"status"`
+	Force    int `form:"force"`
 }
 
 func (MsgService) List(form *ListForm) (data []msgModel.MsgModel, error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
-	db = db.Model(MsgService{}.NewMsgModel())
+	userID := user.User().Id
+	db = db.Model(MsgService{}.NewMsgModel()).Where("user_id = ?", userID)
+
+	avaSMap := map[int]bool{2: true, 1: true}
+
+	if _, ok := avaSMap[form.Force]; ok {
+		fmt.Println("force")
+		db = db.Where("`force` = ?", form.Force)
+	}
+
+	avaFMap := map[int]bool{2: true, 1: true}
+	if _, ok := avaFMap[form.Status]; ok {
+		fmt.Println("status")
+		db = db.Where("`status` = ?", form.Status)
+	}
+
 	db = db.Order("`status`").Order("`id` desc")
 	page, pageSize := paginate(form.Page, form.PageSize)
 	error = db.Limit(pageSize).Offset(page).Find(&data).Error
@@ -56,10 +74,11 @@ func (MsgService) List(form *ListForm) (data []msgModel.MsgModel, error error) {
 }
 
 type AttrForm struct {
-	Id    string  `form:"id"`
+	Id    string `form:"id"`
 	Name  string `form:"name"`
 	Value string `form:"value"`
 }
+
 func (MsgService) Update(msg *msgModel.MsgModel, attrName string, attrValue interface{}) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
@@ -73,7 +92,7 @@ func (MsgService) Create(data *msgModel.MsgModel) error {
 	db := database.Connect("")
 	defer database.Close(db)
 
-	if error :=db.Model(&msgModel.MsgModel{}).Create(data).Error; error != nil {
+	if error := db.Model(&msgModel.MsgModel{}).Create(data).Error; error != nil {
 		fmt.Println("MsgService Create Error:", error.Error())
 		return errors.New("创建失败")
 	}
