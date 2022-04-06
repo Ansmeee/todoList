@@ -110,6 +110,7 @@ func (TodoService) FindByID(id string) (todo *todo.TodoModel, error error) {
 }
 
 type QueryForm struct {
+	Id        string   `form:"id"`
 	From      string   `json:"from" form:"from"`
 	Keywords  string   `json:"keywords" form:"keywords"`
 	FirstDate string   `json:"first_date" form:"first_date"`
@@ -130,6 +131,10 @@ func (TodoService) List(form *QueryForm) (data []todo.TodoModel, total int64, er
 	db = db.Model(model)
 	if len(form.ListId) > 0 {
 		db = db.Where("list_id = ?", form.ListId)
+	}
+
+	if form.Id != "" {
+		db = db.Where("uid = ?", form.Id)
 	}
 
 	if len(form.Wheres) > 0 {
