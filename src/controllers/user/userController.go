@@ -223,6 +223,30 @@ func (UserController) ResetPass(request *gin.Context)  {
 	response.Success()
 }
 
+func (UserController) VerifyEmail(request *gin.Context)  {
+	response := response.Response{request}
+
+	user := userModel.User()
+	if user.Id == "" {
+		response.ErrorWithMSG("请先登陆")
+		return
+	}
+
+	if 0 != user.Verified << 1 {
+		response.ErrorWithMSG("邮箱已完成验证")
+		return
+	}
+
+	error := service.VerifyEmail(user)
+	if error != nil {
+		response.ErrorWithMSG("验证失败")
+		return
+	}
+
+	response.Success()
+	return
+}
+
 func (UserController) UpdateAttr(request *gin.Context) {
 	response := response.Response{request}
 

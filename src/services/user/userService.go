@@ -19,6 +19,7 @@ import (
 	"todoList/src/config"
 	"todoList/src/models/user"
 	"todoList/src/services/common"
+	"todoList/src/services/mailSVC"
 	"todoList/src/utils/database"
 	"todoList/src/utils/redis"
 )
@@ -272,7 +273,7 @@ func (UserService) ResetPass(form *ResetPassForm) (error error) {
 }
 
 type AttrForm struct {
-	Id    string  `form:"id"`
+	Id    string `form:"id"`
 	Key   string `form:"key"`
 	Value string `form:"value"`
 }
@@ -389,10 +390,6 @@ func (UserService) Delete(user *user.UserModel) (error error) {
 }
 
 func (UserService) GenerateToken(userInfo *user.UserModel) (token string, error error) {
-	header := map[string]string{"typ": "JWT", "alg": "HS256"}
-	headerByte, _ := json.Marshal(header)
-	encodingHeader := base64.StdEncoding.EncodeToString(headerByte)
-
 	conf, error := cfg.Config()
 	if error != nil {
 		fmt.Println(error.Error())
@@ -400,7 +397,15 @@ func (UserService) GenerateToken(userInfo *user.UserModel) (token string, error 
 	}
 
 	tokenLifeTime := conf.Section("cache").Key("token_life_time").MustInt(86400)
-	expireTime := time.Hour * time.Duration(tokenLifeTime / 60 / 60)
+	return generate(userInfo, tokenLifeTime)
+}
+
+func generate(userInfo *user.UserModel, tokenLifeTime int)  (token string, error error) {
+	header := map[string]string{"typ": "JWT", "alg": "HS256"}
+	headerByte, _ := json.Marshal(header)
+	encodingHeader := base64.StdEncoding.EncodeToString(headerByte)
+
+	expireTime := time.Hour * time.Duration(tokenLifeTime/60/60)
 	payload := map[string]interface{}{
 		"account":   userInfo.Id,
 		"name":      userInfo.Name,
@@ -482,6 +487,54 @@ func (UserService) GenerateLocalIconPath() (url string, error error) {
 
 	url = iconPath
 	return
+}
+
+func (UserService) VerifyEmail(userInfo *user.UserModel) error {
+	if userInfo.Email == "" {
+		return errors.New("邮箱为空")
+	}
+
+	conf, error := cfg.Config()
+	if error != nil {
+		fmt.Println(error.Error())
+		return errors.New("读取配置失败")
+	}
+
+	tokenLifeTime := conf.Section("cache").Key("email_token_life_time").MustInt(1200)
+	host := conf.Section("environment").Key("app_host").String()
+	token, error := generate(userInfo, tokenLifeTime)
+	if error != nil {
+		fmt.Println(error.Error())
+		return errors.New("Token 生成失败")
+	}
+
+	client := redis.Connect()
+	defer redis.Close(client)
+
+	encodeData, error := json.Marshal(userInfo.Email)
+	if error != nil {
+		fmt.Println(error.Error())
+		return errors.New("Token 存储失败")
+	}
+
+	expireTime := time.Second * time.Duration(tokenLifeTime)
+	if _, error := client.Set(ctx, token, encodeData, expireTime).Result(); error != nil {
+		fmt.Println(error.Error())
+		return errors.New("Token 存储失败")
+	}
+
+	url := fmt.Sprintf("%s/user/email/verify?token=%s", host, token)
+
+	subject := "土豆清单（ToDoo）邮箱验证"
+	content := fmt.Sprintf("请点击此链接进行邮箱验证，20 分钟内有效: %s", url)
+
+	mailSVC := new(mailSVC.MailSVC)
+	if error := mailSVC.SendText(subject, content, userInfo.Email); error != nil {
+		fmt.Println(error.Error())
+		return errors.New("邮件发送失败")
+	}
+
+	return nil
 }
 
 func (UserService) SaveIcon2QN(file multipart.File, fileHeader *multipart.FileHeader) (url string, error error) {

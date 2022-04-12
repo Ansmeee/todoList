@@ -28,4 +28,5 @@ func (*UserRouter) InitRouter(router gin.IRoutes) {
 	authRouter.PUT("user", controller.Update)
 	authRouter.PUT("user/attr", controller.UpdateAttr)
 	authRouter.PUT("user/pass", controller.ResetPass)
+	authRouter.POST("user/verify/email", controller.VerifyEmail)
 }
