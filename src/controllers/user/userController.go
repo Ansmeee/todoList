@@ -232,13 +232,13 @@ func (*UserController) EmailVerify(request *gin.Context)  {
 
 	form := map[string]string{"token": ""}
 	if err := request.ShouldBind(&form); err != nil {
-		response.ErrorWithMSG("验证失败")
+		response.ErrorWithMSG("验证失败，参数异常")
 		return
 	}
 
 	token := form["token"]
 	if token == "" {
-		response.ErrorWithMSG("验证失败")
+		response.ErrorWithMSG("验证失败，token 不存在")
 		return
 	}
 

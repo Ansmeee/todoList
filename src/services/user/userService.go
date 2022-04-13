@@ -493,7 +493,7 @@ func (*UserService) Verifing(userInfo *user.UserModel) bool {
 	client := redis.Connect()
 	defer redis.Close(client)
 	verifyKey := fmt.Sprintf("email:%s", userInfo.Email)
-	if res, err := client.Exists(ctx, verifyKey).Result(); res > 0 && err == nil{
+	if res, err := client.Exists(ctx, verifyKey).Result(); res > 0 && err == nil {
 		return true
 	}
 
@@ -513,7 +513,7 @@ func (*UserService) Verified(token string) bool {
 	var email string
 	err = json.Unmarshal(data, &email)
 
-	if err != nil || email == ""{
+	if err != nil || email == "" {
 		fmt.Println(err.Error())
 		return false
 	}
@@ -524,27 +524,34 @@ func (*UserService) Verified(token string) bool {
 		return false
 	}
 
-	if u.Id != "" && u.Verified == user.EMAIL_UN_VERIFIED {
-		verifyKey := fmt.Sprintf("email:%s", u.Email)
-		err = client.Del(ctx, verifyKey).Err()
-		if err != nil {
-			fmt.Println(err.Error())
-			return false
-		}
-
-		db := database.Connect("")
-		defer database.Close(db)
-
-		updateData := map[string]interface{}{"verified": user.EMAIL_VERIFIED}
-
-		err = db.Model(&user.UserModel{}).Where("uid = ?", u.Id).Updates(updateData).Error
-		if err == nil {
-			return true
-		}
-
-		fmt.Println(err.Error())
+	if u.Id == "" {
 		return false
 	}
+
+	if u.Verified == user.EMAIL_VERIFIED {
+		return true
+	}
+
+	verifyKey := fmt.Sprintf("email:%s", u.Email)
+	err = client.Del(ctx, verifyKey).Err()
+	if err != nil {
+		fmt.Println("del verifyKey err:", err.Error())
+		return false
+	}
+
+	db := database.Connect("")
+	defer database.Close(db)
+
+	updateData := map[string]interface{}{
+		"verified":   user.EMAIL_VERIFIED,
+		"updated_at": time.Now().Format("2006-01-02 15:01:05"),
+	}
+
+	if db.Model(&user.UserModel{}).Where("uid = ?", u.Id).Updates(updateData).Error == nil {
+		return true
+	}
+
+	fmt.Println("updateData err:", err.Error())
 
 	return false
 }
