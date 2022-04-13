@@ -12,8 +12,9 @@ type UserModel struct {
 }
 
 const (
-	EMAIL_VERIFIED = 2
-	PHONE_VERIFIED = 1
+	EMAIL_VERIFIED    = 2
+	EMAIL_VERIFING    = 1
+	EMAIL_UN_VERIFIED = 0
 )
 
 func (UserModel) TableName() string {

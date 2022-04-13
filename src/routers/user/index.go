@@ -19,6 +19,7 @@ func (*UserRouter) InitRouter(router gin.IRoutes) {
 	router.POST("user/signin", controller.SignIn)
 	router.POST("user/signout", controller.SignOut)
 	router.POST("user/signup", controller.SignUp)
+	router.POST("user/email/verify", controller.EmailVerify)
 
 	auth := new(authorize.Authorize)
 	authRouter := router.Use(auth.Auth)

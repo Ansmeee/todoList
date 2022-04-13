@@ -58,6 +58,10 @@ func (UserController) Info(request *gin.Context) {
 		return
 	}
 
+	if service.Verifing(data) {
+		data.Verified = userModel.EMAIL_VERIFING
+	}
+
 	response.SuccessWithData(data)
 	return
 }
@@ -223,6 +227,31 @@ func (UserController) ResetPass(request *gin.Context)  {
 	response.Success()
 }
 
+func (*UserController) EmailVerify(request *gin.Context)  {
+	response := response.Response{request}
+
+	form := map[string]string{"token": ""}
+	if err := request.ShouldBind(&form); err != nil {
+		response.ErrorWithMSG("验证失败")
+		return
+	}
+
+	token := form["token"]
+	if token == "" {
+		response.ErrorWithMSG("验证失败")
+		return
+	}
+
+	res := service.Verified(token)
+	if res == true {
+		response.Success()
+		return
+	}
+
+	response.ErrorWithMSG("验证失败")
+	return
+}
+
 func (UserController) VerifyEmail(request *gin.Context)  {
 	response := response.Response{request}
 
@@ -232,8 +261,13 @@ func (UserController) VerifyEmail(request *gin.Context)  {
 		return
 	}
 
-	if 0 != user.Verified << 1 {
+	if userModel.EMAIL_VERIFIED == user.Verified {
 		response.ErrorWithMSG("邮箱已完成验证")
+		return
+	}
+
+	if service.Verifing(user) == true {
+		response.ErrorWithMSG("邮箱正在验证中")
 		return
 	}
 

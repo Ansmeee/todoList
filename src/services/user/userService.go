@@ -400,7 +400,7 @@ func (UserService) GenerateToken(userInfo *user.UserModel) (token string, error 
 	return generate(userInfo, tokenLifeTime)
 }
 
-func generate(userInfo *user.UserModel, tokenLifeTime int)  (token string, error error) {
+func generate(userInfo *user.UserModel, tokenLifeTime int) (token string, error error) {
 	header := map[string]string{"typ": "JWT", "alg": "HS256"}
 	headerByte, _ := json.Marshal(header)
 	encodingHeader := base64.StdEncoding.EncodeToString(headerByte)
@@ -489,7 +489,67 @@ func (UserService) GenerateLocalIconPath() (url string, error error) {
 	return
 }
 
-func (UserService) VerifyEmail(userInfo *user.UserModel) error {
+func (*UserService) Verifing(userInfo *user.UserModel) bool {
+	client := redis.Connect()
+	defer redis.Close(client)
+	verifyKey := fmt.Sprintf("email:%s", userInfo.Email)
+	if res, err := client.Exists(ctx, verifyKey).Result(); res > 0 && err == nil{
+		return true
+	}
+
+	return false
+}
+
+func (*UserService) Verified(token string) bool {
+	client := redis.Connect()
+	defer redis.Close(client)
+
+	data, err := client.Get(ctx, token).Bytes()
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+
+	var email string
+	err = json.Unmarshal(data, &email)
+
+	if err != nil || email == ""{
+		fmt.Println(err.Error())
+		return false
+	}
+
+	err, u := thisService.FindeByEmail(email)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+
+	if u.Id != "" && u.Verified == user.EMAIL_UN_VERIFIED {
+		verifyKey := fmt.Sprintf("email:%s", u.Email)
+		err = client.Del(ctx, verifyKey).Err()
+		if err != nil {
+			fmt.Println(err.Error())
+			return false
+		}
+
+		db := database.Connect("")
+		defer database.Close(db)
+
+		updateData := map[string]interface{}{"verified": user.EMAIL_VERIFIED}
+
+		err = db.Model(&user.UserModel{}).Where("uid = ?", u.Id).Updates(updateData).Error
+		if err == nil {
+			return true
+		}
+
+		fmt.Println(err.Error())
+		return false
+	}
+
+	return false
+}
+
+func (*UserService) VerifyEmail(userInfo *user.UserModel) error {
 	if userInfo.Email == "" {
 		return errors.New("邮箱为空")
 	}
@@ -523,9 +583,14 @@ func (UserService) VerifyEmail(userInfo *user.UserModel) error {
 		return errors.New("Token 存储失败")
 	}
 
-	url := fmt.Sprintf("%s/user/email/verify?token=%s", host, token)
+	verifyKey := fmt.Sprintf("email:%s", userInfo.Email)
+	if _, error := client.Set(ctx, verifyKey, "", expireTime).Result(); error != nil {
+		fmt.Println(error.Error())
+		return errors.New("验证信息存储失败")
+	}
 
 	subject := "土豆清单（ToDoo）邮箱验证"
+	url := fmt.Sprintf("%s/email/verify?token=%s", host, token)
 	content := fmt.Sprintf("请点击此链接进行邮箱验证，20 分钟内有效: %s", url)
 
 	mailSVC := new(mailSVC.MailSVC)
