@@ -2,7 +2,9 @@ package list
 
 import (
 	"errors"
+	"gorm.io/gorm"
 	"todoList/src/models/list"
+	"todoList/src/models/todo"
 	"todoList/src/services/common"
 	"todoList/src/utils/database"
 )
@@ -104,15 +106,29 @@ func (ListService) Update(list, data *list.ListModel) (result *list.ListModel, e
 	return
 }
 
-func (ListService) Delete(list *list.ListModel) (error error) {
+func (ListService) Delete(list *list.ListModel) error {
 	db := database.Connect("")
 	defer database.Close(db)
 
-	if len(list.Id) == 0  {
-		error = errors.New("清单不存在")
-		return
+	if len(list.Id) == 0 {
+		return errors.New("清单不存在")
 	}
 
-	error = db.Model(model).Where("uid = ?", list.Id).Delete(list).Error
-	return
+	err := db.Transaction(func(tx *gorm.DB) error {
+		updateData := map[string]interface{}{
+			"list_id": 0,
+			"type":    "",
+		}
+		if err := db.Model(&todo.TodoModel{}).Where("list_id = ?", list.Id).Updates(updateData).Error; err != nil {
+			return err
+		}
+
+		if err := db.Where("uid = ?", list.Id).Delete(list).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }
