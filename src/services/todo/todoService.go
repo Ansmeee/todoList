@@ -2,10 +2,13 @@ package todo
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"reflect"
 	"time"
 	"todoList/src/models/todo"
 	"todoList/src/services/common"
+	"todoList/src/services/list"
 	"todoList/src/utils/database"
 )
 
@@ -28,6 +31,7 @@ func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error err
 	data.Id = uid
 	error = db.Model(model).Create(data).Error
 	if error != nil {
+		fmt.Println("TodoService Create Error:", error.Error())
 		return
 	}
 
@@ -79,20 +83,60 @@ func (TodoService) Update(todo, data *todo.TodoModel) (error error) {
 	return
 }
 
+func parseValue(attrName string, attrValue interface{}) (interface{}, error) {
+	rf := reflect.TypeOf(todo.TodoModel{})
+
+	for i := 0; i < rf.NumField(); i++ {
+		f := rf.Field(i)
+		if f.Tag.Get("form") == attrName {
+			switch f.Type.Kind() {
+			case reflect.Int:
+				switch reflect.ValueOf(attrValue).Kind() {
+				case reflect.Float64:
+					v := attrValue.(float64)
+					return int(v), nil
+				default:
+					return attrValue.(int), nil
+				}
+			case reflect.String:
+				return attrValue.(string), nil
+			}
+		}
+	}
+
+	return nil, errors.New("字段不存在")
+}
+
 func (TodoService) UpdateAttr(todo *todo.TodoModel, attrName string, attrValue interface{}) (error error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
-	if attrName == "top" && attrValue == "1" {
-		attrValue = common.Incr("top")
+	value, error := parseValue(attrName, attrValue)
+	fmt.Printf("%T, %v", value, value)
+	if error != nil {
+		fmt.Println("TodoService UpdateAttr Error:", error.Error())
+		return
 	}
 
-	updateData := map[string]interface{}{attrName: attrValue}
+	updateData := map[string]interface{}{attrName: value, "updated_at": time.Now().Format("2006-01-02 15:01:05")}
 	if attrName == "status" && attrValue == "2" {
 		updateData["finished_at"] = time.Now().Format("2006-01-02 15:01:05")
 	}
 
-	error = db.Model(todo).Where("uid = ?", todo.Id).Updates(updateData).Error
+	if attrName == "list_id" {
+		dir, err := list.ListService{}.FindByID(attrValue.(string))
+		if err != nil {
+			fmt.Println("TodoService UpdateAttr Error:", err.Error())
+			error = err
+			return
+		}
+
+		updateData["type"] = dir.Title
+	}
+
+	if error = db.Model(todo).Where("uid = ?", todo.Id).Updates(updateData).Error; error != nil {
+		fmt.Println("TodoService UpdateAttr Error:", error.Error())
+	}
 	return
 }
 

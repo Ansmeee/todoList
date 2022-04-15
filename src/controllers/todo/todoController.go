@@ -197,26 +197,27 @@ func (TodoController) Create(request *gin.Context) {
 	todo := thisService.NewModel()
 	error = request.ShouldBind(todo)
 	if error != nil {
-		response.ErrorWithMSG("创建失败，请重试")
+		fmt.Println("TodoController Create Error:", error.Error())
+		response.ErrorWithMSG("参数解析异常")
 		return
 	}
 
 	validator := new(todoValidator.TodoValidator)
 	error = validator.Validate(*todo, todoValidator.TodoCreateRules)
 	if error != nil {
-		response.ErrorWithMSG(fmt.Sprintf("创建失败: %s", error.Error()))
+		response.ErrorWithMSG(fmt.Sprintf("参数验证失败: %s", error.Error()))
 		return
 	}
 
 	if todo.ListId != "" {
 		list, error := listService.FindByID(todo.ListId)
 		if error != nil {
-			response.ErrorWithMSG("创建失败，请重试")
+			response.ErrorWithMSG("文件夹不存在")
 			return
 		}
 
 		if list.Id == "" {
-			response.ErrorWithMSG("创建失败，请重试")
+			response.ErrorWithMSG("文件夹信息异常")
 			return
 		}
 
@@ -356,9 +357,9 @@ func (TodoController) Delete(request *gin.Context) {
 }
 
 type AttrForm struct {
-	Id    string  `form:"id"`
-	Name  string `form:"name"`
-	Value string `form:"value"`
+	Id    string      `form:"id"`
+	Name  string      `form:"name"`
+	Value interface{} `form:"value"`
 }
 
 func (TodoController) UpdateAttr(request *gin.Context) {
