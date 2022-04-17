@@ -90,13 +90,13 @@ func setDoneForm(request *gin.Context, form *todoService.QueryForm) {
 func setDefaultForm(request *gin.Context, form *todoService.QueryForm) {
 	form.ListId = form.From
 
-	sortBy := "created_at"
+	sortBy := "deadline"
 	if len(form.SortBy) > 0 {
 		sortBy = form.SortBy
 	}
 	form.SortBy = sortBy
 
-	sortOrder := "desc"
+	sortOrder := "asc"
 	if len(form.SortOrder) > 0 {
 		sortOrder = form.SortOrder
 	}
