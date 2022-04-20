@@ -17,10 +17,10 @@ type TodoController struct{}
 var thisService = &todoService.TodoService{}
 var listService = &list.ListService{}
 
-func setLatestForm(request *gin.Context, form *todoService.QueryForm) {
+func setTodayForm(request *gin.Context, form *todoService.QueryForm) {
 	form.PageSize = 20
 
-	sortBy := "updated_at"
+	sortBy := "priority"
 	if len(form.SortBy) > 0 {
 		sortBy = form.SortBy
 	}
@@ -52,12 +52,55 @@ func setLatestForm(request *gin.Context, form *todoService.QueryForm) {
 		}
 	}
 
+	newRules = append(
+		newRules,
+		[]string{"status", "<=", status},
+		[]string{"deadline", "=", time.Now().Format("2006-01-02")},
+		[]string{"user_id", "=", user.User().Id},
+	)
+
+	form.Wheres = newRules
+}
+
+func setAllForm(request *gin.Context, form *todoService.QueryForm)  {
+	sortBy := "deadline"
+	if len(form.SortBy) > 0 {
+		sortBy = form.SortBy
+	}
+	form.SortBy = sortBy
+
+	sortOrder := "asc"
+	if len(form.SortOrder) > 0 {
+		sortOrder = form.SortOrder
+	}
+	form.SortOrder = sortOrder
+
+	var status = "1"
+	var newRules [][]string
+	form.Rules = request.QueryArray("rules[]")
+	if len(form.Rules) > 0 {
+		for _, rule := range form.Rules {
+			val := ""
+			opt := "="
+			if rule == "priority" {
+				val = "3"
+			}
+
+			if rule == "status" {
+				status = "2"
+				continue
+			}
+
+			newRules = append(newRules, []string{rule, opt, val})
+		}
+	}
+
 	newRules = append(newRules, []string{"status", "<=", status}, []string{"user_id", "=", user.User().Id})
 	form.Wheres = newRules
 }
 
 func setDoneForm(request *gin.Context, form *todoService.QueryForm) {
-	sortBy := "finished_at"
+	sortBy := "deadline"
 	if len(form.SortBy) > 0 {
 		sortBy = form.SortBy
 	}
@@ -158,10 +201,12 @@ func (TodoController) List(request *gin.Context) {
 	}
 
 	switch form.From {
+	case "all":
+		setAllForm(request, form)
 	case "done":
 		setDoneForm(request, form)
-	case "latest":
-		setLatestForm(request, form)
+	case "today":
+		setTodayForm(request, form)
 	default:
 		setDefaultForm(request, form)
 	}
