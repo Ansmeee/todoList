@@ -55,7 +55,7 @@ func setTodayForm(request *gin.Context, form *todoService.QueryForm) {
 	newRules = append(
 		newRules,
 		[]string{"status", "<=", status},
-		[]string{"deadline", "=", time.Now().Format("2006-01-02")},
+		[]string{"deadline", "<=", time.Now().Format("2006-01-02")},
 		[]string{"user_id", "=", user.User().Id},
 	)
 

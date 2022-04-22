@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 	"todoList/src/models/todo"
 	"todoList/src/services/common"
@@ -95,6 +96,8 @@ func parseValue(attrName string, attrValue interface{}) (interface{}, error) {
 				case reflect.Float64:
 					v := attrValue.(float64)
 					return int(v), nil
+				case reflect.String:
+					return strconv.Atoi(attrValue.(string))
 				default:
 					return attrValue.(int), nil
 				}
