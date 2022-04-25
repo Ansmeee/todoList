@@ -3,6 +3,7 @@ package list
 import (
 	"errors"
 	"gorm.io/gorm"
+	"time"
 	"todoList/src/models/list"
 	"todoList/src/models/todo"
 	"todoList/src/services/common"
@@ -96,7 +97,12 @@ func (ListService) Update(list, data *list.ListModel) (result *list.ListModel, e
 		return
 	}
 
-	error = db.Model(list).Omit("uid", "created_at", "deleted_at").Where("uid = ?", data.Id).Save(data).Error
+	updateData := map[string]interface{}{"updated_at": time.Now().Format("2006-01-02 15:01:05")}
+	if data.Title != list.Title {
+		updateData["title"] = data.Title
+	}
+
+	error = db.Model(list).Where("uid = ?", data.Id).Updates(updateData).Error
 
 	if error != nil {
 		return
