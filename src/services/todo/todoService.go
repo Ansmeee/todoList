@@ -23,21 +23,20 @@ func (TodoService) NewModel() *todo.TodoModel {
 	return new(todo.TodoModel)
 }
 
-func (TodoService) Create(data *todo.TodoModel) (todo *todo.TodoModel, error error) {
+func (TodoService) Create(data *todo.TodoModel) (*todo.TodoModel, error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
 	uid := common.GetUID()
 
 	data.Id = uid
-	error = db.Model(model).Create(data).Error
-	if error != nil {
-		fmt.Println("TodoService Create Error:", error.Error())
-		return
+	data.Status = todo.STATUS_ACTIVE
+	if err := db.Model(model).Create(data).Error; err != nil {
+		fmt.Println("TodoService Create Error:", err.Error())
+		return nil, errors.New("保存失败")
 	}
 
-	todo = data
-	return
+	return data, nil
 }
 
 type UpdateForm struct {
