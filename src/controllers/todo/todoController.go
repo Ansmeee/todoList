@@ -3,7 +3,9 @@ package todo
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"os"
 	"time"
+	"todoList/config"
 	"todoList/src/models/todo"
 	"todoList/src/models/user"
 	"todoList/src/services/list"
@@ -62,7 +64,7 @@ func setTodayForm(request *gin.Context, form *todoService.QueryForm) {
 	form.Wheres = newRules
 }
 
-func setAllForm(request *gin.Context, form *todoService.QueryForm)  {
+func setAllForm(request *gin.Context, form *todoService.QueryForm) {
 	sortBy := "deadline"
 	if len(form.SortBy) > 0 {
 		sortBy = form.SortBy
@@ -181,6 +183,88 @@ func setDefaultForm(request *gin.Context, form *todoService.QueryForm) {
 	}
 
 	form.Wheres = newRules
+}
+
+func (TodoController) Img(request *gin.Context) {
+	response := response.Response{request}
+
+	id := request.Param("id")
+	img := request.Param("img")
+
+	if img == "" {
+		response.ErrorWithMSG("图片加载失败")
+		return
+	}
+
+	todo, err := thisService.FindByID(id)
+	if todo.Id == "" || err != nil {
+		response.ErrorWithMSG("图片加载失败")
+		return
+	}
+
+	cfg, err := config.Config()
+	if err != nil {
+		response.ErrorWithMSG("图片加载失败")
+		return
+	}
+
+	sfPrefix := cfg.Section("environment").Key("task_img_path").String()
+	file := fmt.Sprintf("%s/%s/%s", sfPrefix, id, img)
+	_, err = os.Stat(file)
+	if err != nil {
+		response.ErrorWithMSG("图片加载失败")
+		return
+	}
+
+	response.SuccessWithFile(file)
+}
+
+func (TodoController) Upload(request *gin.Context) {
+	response := response.Response{request}
+
+	user := user.User()
+	if user.Id == "" {
+		response.ErrorWithMSG("请先登陆")
+		return
+	}
+
+	form := new(todoService.UploadForm)
+	if err := request.ShouldBind(form); err != nil {
+		response.ErrorWithMSG("上传失败")
+		return
+	}
+
+	mForm, err := request.MultipartForm()
+	if err != nil {
+		response.ErrorWithMSG("上传失败")
+		return
+	}
+
+	td := new(todo.TodoModel)
+	if form.Id != "" {
+		td, err = thisService.FindByID(form.Id)
+		if td.Id == "" || err != nil {
+			response.ErrorWithMSG("上传失败")
+			return
+		}
+	} else {
+		todoForm := new(todo.TodoModel)
+		todoForm.Title = "未命名"
+		todoForm.UserId = user.Id
+		td, err = thisService.Create(todoForm)
+		if td.Id == "" || err != nil {
+			response.ErrorWithMSG("上传失败")
+			return
+		}
+	}
+
+	sf, err := thisService.Upload(td, mForm.File["upload"], request)
+	if err != nil {
+		response.ErrorWithMSG("上传失败")
+	}
+
+	data := map[string]interface{}{"success": sf, "id": td.Id}
+	response.SuccessWithData(data)
 }
 
 func (TodoController) List(request *gin.Context) {

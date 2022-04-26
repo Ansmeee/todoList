@@ -367,7 +367,6 @@ func (UserController) Delete(request *gin.Context) {
 func (UserController) ShowIcon(request *gin.Context)  {
 	response := response.Response{request}
 
-	fmt.Println("here")
 	icon := request.Param("icon")
 
 	iconPath, error := service.GenerateLocalIconPath()
@@ -382,31 +381,7 @@ func (UserController) ShowIcon(request *gin.Context)  {
 		return
 	}
 
-	var HttpContentType = map[string]string{
-		".avi": "video/avi",
-		".mp3": "   audio/mp3",
-		".mp4": "video/mp4",
-		".wmv": "   video/x-ms-wmv",
-		".asf":  "video/x-ms-asf",
-		".rm":   "application/vnd.rn-realmedia",
-		".rmvb": "application/vnd.rn-realmedia-vbr",
-		".mov":  "video/quicktime",
-		".m4v":  "video/mp4",
-		".flv":  "video/x-flv",
-		".jpg":  "image/jpeg",
-		".png":  "image/png",
-	}
-
-	fileNameWithSuffix := path.Base(file)
-	fileType := path.Ext(fileNameWithSuffix)
-	fileContentType, ok := HttpContentType[fileType]
-	if !ok {
-		response.ErrorWithMSG("头像加载失败")
-		return
-	}
-
-	request.Header("Content-Type", fileContentType)
-	request.File(file)
+	response.SuccessWithFile(file)
 }
 
 func (UserController) Icon(request *gin.Context) {

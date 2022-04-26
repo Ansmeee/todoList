@@ -10,14 +10,14 @@ type TodoRouter struct {
 }
 
 func (*TodoRouter) InitRouter(router gin.IRoutes) {
-	auth := new(authorize.Authorize)
-	router = router.Use(auth.Auth)
-
 	controller := new(todo.TodoController)
-	router.GET("todo", controller.List)
-	router.POST("todo", controller.Create)
-	router.PUT("todo", controller.Update)
-	router.GET("todo/:id", controller.Detail)
-	router.DELETE("todo/:id", controller.Delete)
-	router.PUT("todo/attr", controller.UpdateAttr)
+	auth := new(authorize.Authorize)
+	arouter := router.Use(auth.Auth)
+	arouter.GET("todo", controller.List)
+	arouter.POST("todo", controller.Create)
+	arouter.PUT("todo", controller.Update)
+	arouter.GET("todo/:id", controller.Detail)
+	arouter.DELETE("todo/:id", controller.Delete)
+	arouter.PUT("todo/attr", controller.UpdateAttr)
+	arouter.POST("todo/upload", controller.Upload)
 }

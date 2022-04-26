@@ -2,11 +2,17 @@ package todo
 
 import (
 	"context"
+	"crypto/md5"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"mime/multipart"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"time"
+	"todoList/config"
 	"todoList/src/models/todo"
 	"todoList/src/services/common"
 	"todoList/src/services/list"
@@ -153,6 +159,50 @@ func (TodoService) FindByID(id string) (todo *todo.TodoModel, error error) {
 	}
 
 	return
+}
+
+type UploadForm struct {
+	Id    string `form:"id"`
+	Files []multipart.FileHeader
+}
+
+func (TodoService) Upload(todo *todo.TodoModel, files []*multipart.FileHeader, request *gin.Context) (map[string]string, error) {
+	cfg, err := config.Config()
+	if err != nil {
+		fmt.Println("todoService Upload Error:", err.Error())
+		return nil, errors.New("图片保存失败")
+	}
+
+	sfPrefix := cfg.Section("environment").Key("task_img_path").String()
+	fp := fmt.Sprintf("%s/%s", sfPrefix, todo.Id)
+	gp := generatePath(fp)
+	if gp == false {
+		return nil, errors.New("图片保存失败")
+	}
+
+	host := cfg.Section("environment").Key("app_host").String()
+	sfs := make(map[string]string)
+	for _, f := range files {
+
+		fn := fmt.Sprintf("%x%s", md5.Sum([]byte(fmt.Sprintf("%d,%s", time.Now(), f.Filename))), filepath.Ext(f.Filename))
+		err = request.SaveUploadedFile(f, fmt.Sprintf("%s/%s", fp, fn))
+		if err == nil {
+			sfs[fn] = fmt.Sprintf("%s/rest/todo/%s/img/%s", host, todo.Id, fn)
+		} else {
+			fmt.Println("todoService Upload Error:", err.Error())
+		}
+	}
+
+	return sfs, nil
+}
+
+func generatePath(fp string) bool {
+	if err := os.MkdirAll(fp, os.ModePerm); err != nil {
+		fmt.Println("todoService generatePath Error:", err.Error())
+		return false
+	}
+
+	return true
 }
 
 type QueryForm struct {

@@ -3,6 +3,7 @@ package response
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"path"
 )
 
 type Response struct {
@@ -33,6 +34,35 @@ func (response *Response) SuccessWithMSG(msg string) {
 
 func (response *Response) SuccessWithDetail(code int, msg string, data interface{}) {
 	responseData(code, msg, data, response)
+}
+
+func (response *Response) SuccessWithFile(file string) {
+
+	var HttpContentType = map[string]string{
+		".avi": "video/avi",
+		".mp3": "   audio/mp3",
+		".mp4": "video/mp4",
+		".wmv": "   video/x-ms-wmv",
+		".asf":  "video/x-ms-asf",
+		".rm":   "application/vnd.rn-realmedia",
+		".rmvb": "application/vnd.rn-realmedia-vbr",
+		".mov":  "video/quicktime",
+		".m4v":  "video/mp4",
+		".flv":  "video/x-flv",
+		".jpg":  "image/jpeg",
+		".png":  "image/png",
+	}
+
+	fileNameWithSuffix := path.Base(file)
+	fileType := path.Ext(fileNameWithSuffix)
+	fileContentType, ok := HttpContentType[fileType]
+	if !ok {
+		response.ErrorWithMSG("头像加载失败")
+		return
+	}
+
+	response.Requet.Header("Content-Type", fileContentType)
+	response.Requet.File(file)
 }
 
 func (response *Response) Error() {
