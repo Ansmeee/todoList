@@ -35,7 +35,7 @@ func main() {
 		data.Id = common.GetUID()
 		data.UserId = todo.UserId
 		data.Status = msgModel.STATUS_UNREAD
-		data.Link = fmt.Sprintf("/all/%s?s_id=%s", todo.ListId, todo.Id)
+		data.Link = fmt.Sprintf("/all?s_id=%s", todo.Id)
 		if todo.Deadline == sDate {
 			data.Force = msgModel.FORCE
 			data.Content = fmt.Sprintf("%s", todo.Title)

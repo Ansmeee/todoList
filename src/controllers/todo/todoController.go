@@ -20,13 +20,13 @@ var listService = &list.ListService{}
 func setTodayForm(request *gin.Context, form *todoService.QueryForm) {
 	form.PageSize = 20
 
-	sortBy := "priority"
+	sortBy := "deadline"
 	if len(form.SortBy) > 0 {
 		sortBy = form.SortBy
 	}
 	form.SortBy = sortBy
 
-	sortOrder := "desc"
+	sortOrder := "asc"
 	if len(form.SortOrder) > 0 {
 		sortOrder = form.SortOrder
 	}
