@@ -20,8 +20,8 @@ func main() {
 	config.InitConfig()
 
 	for {
-		go recvMSG()
-		time.Sleep(1 * time.Second)
+		recvMSG()
+		time.Sleep(5 * time.Second)
 	}
 }
 
@@ -64,15 +64,7 @@ func recvMSG() {
 	}
 
 	subject := "土豆清单（ToDoo）用户反馈"
-	cons := make([]string, 0)
-	cons = append(cons, "用户反馈信息：")
-	cons = append(cons, fmt.Sprintf("反馈用户：%s", user.Email))
-	cons = append(cons, fmt.Sprintf("反馈内容：%s", fb.Content))
-	cons = append(cons, fmt.Sprintf("反馈时间：%s", time.Now().Format("2006-01-02")))
-	cons = append(cons, "请及时处理")
-	content := strings.Join(cons, "\n")
-
-	fmt.Println(content)
+	content := fmt.Sprintf("用户【%s】提交了新的用户反馈，请及时处理", user.Email)
 	mSVC := new(mailSVC.MailSVC)
 	if err := mSVC.SendText(subject, content, receivers...); err != nil {
 		log.Println("feedback watcher error:", err)
