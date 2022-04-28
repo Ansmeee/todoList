@@ -14,7 +14,7 @@ func (FeedbackController) Create(request *gin.Context)  {
 
 	res := service.FeedbackFrequently()
 	if res == true {
-		response.ErrorWithMSG("提交太频繁了，明天再试试吧")
+		response.ErrorWithMSG("提交太频繁了，稍后再试吧")
 		return
 	}
 
