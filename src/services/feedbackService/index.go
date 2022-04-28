@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"log"
 	"mime/multipart"
 	"os"
 	"path"
 	"strings"
+	"time"
 	cfg "todoList/config"
 	"todoList/src/models/feedbackModel"
 	"todoList/src/models/user"
@@ -33,6 +35,15 @@ func NewModel() *feedbackModel.FeedbackModel {
 	return new(feedbackModel.FeedbackModel)
 }
 
+func (*FeedbackService) FindByID(id string) (*feedbackModel.FeedbackModel, error) {
+	db := database.Connect("")
+	defer database.Close(db)
+
+	fb := NewModel()
+	err := db.Where("uid = ?", id).Find(fb).Error
+	return fb, err
+}
+
 func (*FeedbackService) FeedbackFrequently() bool {
 	client := redis.Connect()
 	defer redis.Close(client)
@@ -52,7 +63,18 @@ func (*FeedbackService) FeedbackFrequently() bool {
 	return num >= 5
 }
 
-func (FeedbackService) Create(form *CreateForm, request *gin.Context) (error error) {
+func (FeedbackService) SendMSG2M(fb *feedbackModel.FeedbackModel) {
+	if fb.Id == "" {
+		return
+	}
+
+	client := redis.Connect()
+	defer redis.Close(client)
+
+	client.LPush(ctx, "feedback:msg:list", fb.Id)
+}
+
+func (FeedbackService) Create(form *CreateForm, request *gin.Context) (*feedbackModel.FeedbackModel, error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
@@ -61,8 +83,7 @@ func (FeedbackService) Create(form *CreateForm, request *gin.Context) (error err
 
 	user := user.User()
 	if user.Id == "" {
-		error = errors.New("用户登陆信息异常")
-		return
+		return nil, errors.New("用户登陆信息异常")
 	}
 
 	files := form.Files
@@ -70,8 +91,7 @@ func (FeedbackService) Create(form *CreateForm, request *gin.Context) (error err
 	if len(files) > 0 {
 		savePath := generateSavePath(user.Id)
 		if savePath == ""{
-			error = errors.New("图片保存失败")
-			return
+			return nil, errors.New("图片保存失败")
 		}
 
 		for _, file := range files {
@@ -86,8 +106,13 @@ func (FeedbackService) Create(form *CreateForm, request *gin.Context) (error err
 	key := fmt.Sprintf("feedback:num:%s", user.Id)
 
 	if err := client.Incr(ctx, key).Err(); err != nil {
-		error = errors.New("提交失败，请再试一次")
-		return
+		return nil, errors.New("提交失败，请再试一次")
+	}
+
+	expireAt := time.Now().Add(1 * time.Hour)
+	if _, err := client.ExpireAt(ctx, key, expireAt).Result(); err != nil {
+		log.Println("FeedbackService Create Error:", err)
+		return nil, errors.New("提交失败，请再试一次")
 	}
 
 	feedback := NewModel()
@@ -96,7 +121,12 @@ func (FeedbackService) Create(form *CreateForm, request *gin.Context) (error err
 	feedback.Content = form.Content
 	feedback.Imgs = form.Imgs
 
-	return db.Model(feedback).Create(feedback).Error
+	if err := db.Model(feedback).Create(feedback).Error; err != nil {
+		log.Println("FeedbackService Create Error:", err)
+		return nil, err
+	}
+
+	return feedback, nil
 }
 
 func generateSavePath(prefix string) string {

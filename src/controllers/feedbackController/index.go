@@ -33,11 +33,12 @@ func (FeedbackController) Create(request *gin.Context)  {
 	}
 
 	form.Files = multipartForm.File["imgs[]"]
-	error = service.Create(form, request)
+	fb, error := service.Create(form, request)
 	if error != nil {
 		response.ErrorWithMSG("")
 		return
 	}
 
+	service.SendMSG2M(fb)
 	response.Success()
 }
