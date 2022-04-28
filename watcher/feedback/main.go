@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 	"todoList/config"
+	"todoList/src/models/feedbackModel"
 	"todoList/src/services/feedbackService"
 	"todoList/src/services/mailSVC"
 	"todoList/src/services/user"
@@ -24,6 +26,8 @@ func main() {
 		time.Sleep(5 * time.Second)
 	}
 }
+
+var wg = sync.WaitGroup{}
 
 func recvMSG() {
 	client := redis.Connect()
@@ -56,6 +60,18 @@ func recvMSG() {
 	recvs := cfg.Section("feedback").Key("operator").String()
 	receivers := strings.Split(recvs, ";")
 
+	wg.Add(2)
+	go sendEmail(fb, receivers...)
+	go sendSYSMSG(fb, receivers...)
+	wg.Wait()
+}
+
+func sendSYSMSG(fb *feedbackModel.FeedbackModel, receivers ...string) {
+	defer wg.Done()
+}
+
+func sendEmail(fb *feedbackModel.FeedbackModel, receivers ...string) {
+	defer wg.Done()
 	userSVC := new(user.UserService)
 	err, user := userSVC.FindByID(fb.UserId)
 	if err != nil || user.Id == "" {
@@ -64,7 +80,15 @@ func recvMSG() {
 	}
 
 	subject := "土豆清单（ToDoo）用户反馈"
-	content := fmt.Sprintf("用户【%s】提交了新的用户反馈，请及时处理", user.Email)
+
+	cons := make([]string, 0)
+	cons = append(cons, "用户反馈信息：\n")
+	cons = append(cons, fmt.Sprintf("  反馈用户：%s", user.Email))
+	cons = append(cons, fmt.Sprintf("  反馈内容：%s", fb.Content))
+	cons = append(cons, fmt.Sprintf("  反馈时间：%s", fb.CreatedAt.Format("2006-01-02 15:01:05")))
+	cons = append(cons, "\n请及时处理")
+	content := strings.Join(cons, "\n")
+
 	mSVC := new(mailSVC.MailSVC)
 	if err := mSVC.SendText(subject, content, receivers...); err != nil {
 		log.Println("feedback watcher error:", err)

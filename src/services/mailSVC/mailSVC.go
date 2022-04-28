@@ -18,7 +18,7 @@ func (MailSVC) SendText(subject, content string, receiver ...string) error {
 
 	fmt.Println(content)
 
-	cmd := exec.Command("bash", "-c", fmt.Sprintf("echo '%s' | mail -s '%s' '%s' -aFrom:dev@ansme.cc", content, subject, receivers))
+	cmd := exec.Command("bash", "-c", fmt.Sprintf("echo -e '%s' | mail -s '%s' '%s' -aFrom:dev@ansme.cc", content, subject, receivers))
 	err := cmd.Run()
 
 	if err == nil {
