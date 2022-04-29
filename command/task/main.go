@@ -24,7 +24,8 @@ func main() {
 	eDate := time.Now().Add(d * 3).Format("2006-01-02")
 
 	data := make([]*todo.TodoModel, 0)
-	if error := db.Model(&todo.TodoModel{}).Where("deadline between ? and ?", sDate, eDate).Find(&data).Error; error != nil {
+	whereQ := "status = ? and deadline between ? and ?"
+	if error := db.Model(&todo.TodoModel{}).Where(whereQ, todo.STATUS_ACTIVE, sDate, eDate).Find(&data).Error; error != nil {
 		fmt.Println("task check command error", error.Error())
 		os.Exit(0)
 	}
