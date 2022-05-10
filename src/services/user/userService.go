@@ -35,26 +35,11 @@ var thisModel = &user.UserModel{}
 var ctx = context.Background()
 
 func (s *UserService) FindByPhone(phone string) (*user.UserModel, error) {
-	client := redis.Connect()
-	defer redis.Close(client)
-
-	data := new(user.UserModel)
-	phone = strings.TrimSpace(phone)
-	userCacheKey := fmt.Sprintf("user:%s", phone)
-	cacheData, err := client.Get(ctx, userCacheKey).Bytes()
-	if err != nil {
-		log.Println("user cache data error:", err)
-	} else {
-		json.Unmarshal(cacheData, data)
-		if data != nil {
-			return data, nil
-		}
-	}
-
 	db := database.Connect("")
 	defer database.Close(db)
 
-	err = db.Model(thisModel).Where("phone = ?", phone).First(&data).Error
+	data := new(user.UserModel)
+	err := db.Model(thisModel).Where("phone = ?", phone).First(&data).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -64,34 +49,14 @@ func (s *UserService) FindByPhone(phone string) (*user.UserModel, error) {
 		return nil, errors.New("系统异常")
 	}
 
-	err = rebuildCache(userCacheKey, *data)
-	if err != nil {
-		log.Println("rebuild cache error:", err)
-	}
-
 	return data, nil
 }
 
 func (service *UserService) FindByEmail(email string) (error error, data *user.UserModel) {
-	client := redis.Connect()
-	defer redis.Close(client)
-
-	email = strings.TrimSpace(email)
-	userCacheKey := fmt.Sprintf("user:%s", email)
-	cacheData, err := client.Get(ctx, userCacheKey).Bytes()
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	json.Unmarshal(cacheData, data)
-	if data != nil {
-		return
-	}
-
 	db := database.Connect("")
 	defer database.Close(db)
 
-	err = db.Model(thisModel).Where("email = ?", email).First(&data).Error
+	err := db.Model(thisModel).Where("email = ?", email).First(&data).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return
@@ -99,11 +64,6 @@ func (service *UserService) FindByEmail(email string) (error error, data *user.U
 
 		error = errors.New("系统异常")
 		return
-	}
-
-	err = rebuildCache(userCacheKey, *data)
-	if err != nil {
-		fmt.Println("缓存更新失败")
 	}
 
 	return
@@ -742,6 +702,19 @@ func (*UserService) SMSCode(account string) string {
 	return code
 }
 
+func (*UserService) Frequently(account string) bool {
+	client := redis.Connect()
+	defer redis.Close(client)
+
+	key := fmt.Sprintf("sendsms:num:%s", account)
+	num, err := client.Get(ctx, key).Int()
+	if err != nil {
+		return false
+	}
+
+	return num >= 5
+}
+
 func (*UserService) SendSMS(account string) bool {
 	if account == "" {
 		return false
@@ -770,6 +743,13 @@ func (*UserService) SendSMS(account string) bool {
 		if err != nil {
 			return false
 		}
+	}
+
+	client := redis.Connect()
+	defer redis.Close(client)
+	key := fmt.Sprintf("sendsms:num:%s", account)
+	if err := client.Incr(ctx, key).Err(); err != nil {
+		log.Println("sendsms num incr error:", err)
 	}
 
 	log.Println("send sms code ok:", code)
