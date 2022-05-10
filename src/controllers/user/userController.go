@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -41,6 +42,43 @@ func (UserController) CaptchaImg(request *gin.Context) {
 	captchaService := new(captcha.CaptchaService)
 	source := request.Query("source")
 	captchaService.GenerateImg(request.Writer, source)
+}
+
+type smsForm struct {
+	Account string `form:"account"`
+}
+
+func (UserController) SendSMS(request *gin.Context)  {
+	var response = response.Response{request}
+
+	form := new(smsForm)
+	err := request.ShouldBind(form)
+	if err != nil {
+		log.Println("SendSMS Error:", err)
+		response.ErrorWithMSG("验证码发送失败")
+		return
+	}
+
+	if form.Account == "" {
+		log.Println("SendSMS Error: invalid account")
+		response.ErrorWithMSG("验证码发送失败")
+		return
+	}
+
+	existsCode := service.SMSCode(form.Account)
+	if existsCode != "" {
+		response.SuccessWithMSG("上条验证码依然有效")
+		return
+	}
+
+	res := service.SendSMS(form.Account)
+	if res {
+		response.SuccessWithMSG("验证码已发送至您的手机")
+		return
+	}
+
+	response.ErrorWithMSG("验证码发送失败")
+	return
 }
 
 func (UserController) Info(request *gin.Context) {
@@ -123,13 +161,6 @@ func (UserController) SignIn(request *gin.Context) {
 		return
 	}
 
-	captchaService := new(captcha.CaptchaService)
-	captchaRes := captchaService.Verify(form.Nonce, form.Code)
-	if captchaRes == false {
-		response.ErrorWithMSG("登陆失败，验证码不正确")
-		return
-	}
-
 	token, err := service.SignIn(form)
 	if err != nil {
 		response.ErrorWithMSG(fmt.Sprintf("登录失败，%s", err.Error()))
@@ -141,67 +172,48 @@ func (UserController) SignIn(request *gin.Context) {
 }
 
 func (UserController) SignUp(request *gin.Context) {
-	var response = response.Response{request}
-
-	// 解析表单数据到 user model
-	var form userService.SignupForm
-	if err := request.ShouldBind(&form); err != nil {
-		response.ErrorWithMSG("验证失败：参数错误")
-		return
-	}
-
-	// 参数验证
-	validator := new(userValidator.UserValidator)
-	if err := validator.Validate(form, userValidator.SignUpRules); err != nil {
-		response.ErrorWithMSG(fmt.Sprintf("%s", err.Error()))
-		return
-	}
-
-	if form.Way == "email" {
-		err, existUser := service.FindeByEmail(form.Account)
-		if err != nil || existUser.Id != "" {
-			response.ErrorWithMSG(fmt.Sprintf("该邮箱已被占用"))
-			return
-		}
-
-		captchaService := new(captcha.CaptchaService)
-		captchaRes := captchaService.Verify(form.Nonce, form.Code)
-		if captchaRes == false {
-			response.ErrorWithMSG("验证码不正确")
-			return
-		}
-	}
-
-	if form.Way == "phone" {
-
-	}
-
-	if form.Auth != form.PassWord {
-		response.ErrorWithMSG(fmt.Sprintf("两次输入的密码不一致"))
-		return
-	}
-
-	// 注册
-	user, error := service.SignUp(&form)
-	if error != nil {
-		response.ErrorWithMSG(fmt.Sprintf("%s", error.Error()))
-		return
-	}
-
-	token, err := service.GenerateToken(user)
-	if err != nil {
-		response.SuccessWithDetail(302, "", nil)
-		return
-	}
-
-	res := service.LoginByToken(token, *user)
-	if res != true {
-		response.SuccessWithDetail(302, "", nil)
-		return
-	}
-
-	var data = map[string]string{"token": token}
-	response.SuccessWithData(data)
+	//var response = response.Response{request}
+	//
+	//// 解析表单数据到 user model
+	//var form userService.SignupForm
+	//if err := request.ShouldBind(&form); err != nil {
+	//	response.ErrorWithMSG("验证失败：参数错误")
+	//	return
+	//}
+	//
+	//// 参数验证
+	//validator := new(userValidator.UserValidator)
+	//if err := validator.Validate(form, userValidator.SignUpRules); err != nil {
+	//	response.ErrorWithMSG(fmt.Sprintf("%s", err.Error()))
+	//	return
+	//}
+	//
+	//if form.Auth != form.PassWord {
+	//	response.ErrorWithMSG(fmt.Sprintf("两次输入的密码不一致"))
+	//	return
+	//}
+	//
+	//// 注册
+	//user, error := service.SignUp(&form)
+	//if error != nil {
+	//	response.ErrorWithMSG(fmt.Sprintf("%s", error.Error()))
+	//	return
+	//}
+	//
+	//token, err := service.GenerateToken(user)
+	//if err != nil {
+	//	response.SuccessWithDetail(302, "", nil)
+	//	return
+	//}
+	//
+	//res := service.LoginByToken(token, *user)
+	//if res != true {
+	//	response.SuccessWithDetail(302, "", nil)
+	//	return
+	//}
+	//
+	//var data = map[string]string{"token": token}
+	//response.SuccessWithData(data)
 }
 
 func (UserController) ResetPass(request *gin.Context)  {
@@ -214,15 +226,11 @@ func (UserController) ResetPass(request *gin.Context)  {
 		return
 	}
 
-	fmt.Println(form)
 	error = service.ResetPass(form)
 	if error != nil {
 		response.ErrorWithMSG(error.Error())
 		return
 	}
-
-	token := request.GetHeader("Authorization")
-	error = service.SignOut(token)
 
 	response.Success()
 }
@@ -308,6 +316,19 @@ func (UserController) UpdateAttr(request *gin.Context) {
 	if "" == attrKey {
 		response.ErrorWithMSG("更新失败")
 		return
+	}
+
+	if attrKey == "phone"{
+		if form.Code == "" {
+			response.ErrorWithMSG("请输入短信验证码")
+			return
+		}
+
+		code := service.SMSCode(attrVal)
+		if code == "" || code != form.Code {
+			response.ErrorWithMSG("请输入正确的短信验证码")
+			return
+		}
 	}
 
 	error = service.UpdateAttr(user, attrKey, attrVal)

@@ -19,6 +19,7 @@ func (*StaticRouter) InitRouter(router gin.IRoutes) {
 	router.POST("user/signout", userCTRL.SignOut)
 	router.POST("user/signup", userCTRL.SignUp)
 	router.POST("user/email/verify", userCTRL.EmailVerify)
+	router.POST("user/sms", userCTRL.SendSMS)
 
 	todoCTRL := new(todo.TodoController)
 	router.GET("todo/:id/img/:img", todoCTRL.Img)

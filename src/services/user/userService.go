@@ -11,8 +11,11 @@ import (
 	"github.com/qiniu/go-sdk/v7/auth/qbox"
 	"github.com/qiniu/go-sdk/v7/storage"
 	"gorm.io/gorm"
+	"log"
+	"math/rand"
 	"mime/multipart"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	cfg "todoList/config"
@@ -20,6 +23,7 @@ import (
 	"todoList/src/models/user"
 	"todoList/src/services/common"
 	"todoList/src/services/mailSVC"
+	"todoList/src/services/smsSVC"
 	"todoList/src/utils/database"
 	"todoList/src/utils/redis"
 )
@@ -30,7 +34,45 @@ var thisService = &UserService{}
 var thisModel = &user.UserModel{}
 var ctx = context.Background()
 
-func (service *UserService) FindeByEmail(email string) (error error, data *user.UserModel) {
+func (s *UserService) FindByPhone(phone string) (*user.UserModel, error) {
+	client := redis.Connect()
+	defer redis.Close(client)
+
+	data := new(user.UserModel)
+	phone = strings.TrimSpace(phone)
+	userCacheKey := fmt.Sprintf("user:%s", phone)
+	cacheData, err := client.Get(ctx, userCacheKey).Bytes()
+	if err != nil {
+		log.Println("user cache data error:", err)
+	} else {
+		json.Unmarshal(cacheData, data)
+		if data != nil {
+			return data, nil
+		}
+	}
+
+	db := database.Connect("")
+	defer database.Close(db)
+
+	err = db.Model(thisModel).Where("phone = ?", phone).First(&data).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+
+		log.Println("mysql query error:", err)
+		return nil, errors.New("系统异常")
+	}
+
+	err = rebuildCache(userCacheKey, *data)
+	if err != nil {
+		log.Println("rebuild cache error:", err)
+	}
+
+	return data, nil
+}
+
+func (service *UserService) FindByEmail(email string) (error error, data *user.UserModel) {
 	client := redis.Connect()
 	defer redis.Close(client)
 
@@ -89,8 +131,7 @@ func (service *UserService) FindByID(id string) (error error, data *user.UserMod
 type SigninForm struct {
 	Account  string `form:"account"`
 	Password string `form:"password"`
-	Code     string `form:"code"`
-	Nonce    string `form:"nonce"`
+	Way      string `form:"way"`
 }
 
 func (service *UserService) SignOut(token string) (error error) {
@@ -106,42 +147,76 @@ func (service *UserService) SignOut(token string) (error error) {
 	return
 }
 
-func (service *UserService) SignIn(data *SigninForm) (token string, error error) {
-	err, userInfo := thisService.FindeByEmail(data.Account)
+func signinByAccount(data *SigninForm) (string, error) {
+	var err error
+	var userInfo *user.UserModel
+	if strings.Contains(data.Account, "@") {
+		err, userInfo = thisService.FindByEmail(data.Account)
+	} else {
+		userInfo, err = thisService.FindByPhone(data.Account)
+	}
+
+	if err != nil || userInfo.Id == "" {
+		return "", errors.New("该用户不存在")
+	}
+
+	if err = thisService.AuthPassword(userInfo.Id, data.Password); err != nil {
+		return "", errors.New("用户名或密码不正确")
+	}
+
+	token, err := thisService.GenerateToken(userInfo)
 	if err != nil {
-		error = errors.New("该用户不存在")
-		return
-	}
-
-	if len(userInfo.Id) == 0 {
-		error = errors.New("该用户不存在")
-		return
-	}
-
-	if !userInfo.Active() {
-		error = errors.New("该用户不存在")
-		return
-	}
-
-	error = thisService.AuthPassword(userInfo.Id, data.Password)
-	if error != nil {
-		error = errors.New("用户名或密码不正确")
-		return
-	}
-
-	token, err = thisService.GenerateToken(userInfo)
-	if err != nil {
-		error = errors.New("请重试")
-		return
+		return "", errors.New("请重试")
 	}
 
 	res := thisService.LoginByToken(token, *userInfo)
 	if res != true {
-		error = errors.New("请重试")
-		return
+		return "", errors.New("请重试")
 	}
 
-	return
+	return token, nil
+}
+
+func signinBySMS(data *SigninForm) (string, error) {
+	code := thisService.SMSCode(data.Account)
+	if code == "" || code != data.Password {
+		return "", errors.New("请输入正确的验证码")
+	}
+
+	userInfo, err := thisService.FindByPhone(data.Account)
+	if err != nil {
+		return "", errors.New("用户信息异常")
+	}
+
+	if err == nil && userInfo == nil {
+		signupForm := new(SignupForm)
+		signupForm.Phone = data.Account
+		userInfo, err = signUpWithData(signupForm)
+		if err != nil {
+			return "", errors.New("用户信息初始化失败")
+		}
+	}
+
+	token, err := thisService.GenerateToken(userInfo)
+	if err != nil {
+		return "", errors.New("请重试")
+	}
+
+	res := thisService.LoginByToken(token, *userInfo)
+	if res != true {
+		return "", errors.New("请重试")
+	}
+
+	return token, nil
+}
+
+func (service *UserService) SignIn(data *SigninForm) (string, error) {
+
+	if data.Way == "sms" {
+		return signinBySMS(data)
+	}
+
+	return signinByAccount(data)
 }
 
 func (UserService) AuthPassword(account, password string) (error error) {
@@ -188,31 +263,41 @@ func (UserService) LoginByToken(token string, data user.UserModel) bool {
 }
 
 type SignupForm struct {
-	Account  string `form:"account"`
+	Email    string `form:"account"`
+	Phone    string `form:"phone"`
 	PassWord string `form:"password"`
 	Auth     string `form:"auth"`
-	Way      string `form:"way"`
-	Code     string `form:"code"`
-	Nonce    string `form:"nonce"`
 }
 
-func signUpWithEmail(form *SignupForm) (data *user.UserModel, err error) {
+func signUpWithData(form *SignupForm) (data *user.UserModel, err error) {
 	db := database.Connect("")
 	defer database.Close(db)
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 		newUser := new(user.UserModel)
 		newUser.Id = common.GetUID()
-		newUser.Email = form.Account
+
+		if form.Email != "" {
+			newUser.Email = form.Email
+			newUser.Name = form.Email
+		}
+
+		if form.Phone != "" {
+			newUser.Phone = form.Phone
+			newUser.Name = form.Phone
+		}
+
 		if tx.Model(thisModel).Create(&newUser).Error != nil {
 			return errors.New("注册失败")
 		}
 
-		var userAuth user.AuthModel
-		userAuth.Account = newUser.Id
-		userAuth.Auth = form.Auth
-		if tx.Model(&user.AuthModel{}).Create(&userAuth).Error != nil {
-			return errors.New("注册失败")
+		if form.Email != "" {
+			var userAuth user.AuthModel
+			userAuth.Account = newUser.Id
+			userAuth.Auth = form.Auth
+			if tx.Model(&user.AuthModel{}).Create(&userAuth).Error != nil {
+				return errors.New("注册失败")
+			}
 		}
 
 		data = newUser
@@ -222,14 +307,10 @@ func signUpWithEmail(form *SignupForm) (data *user.UserModel, err error) {
 	return
 }
 
-func (service *UserService) SignUp(data *SignupForm) (user *user.UserModel, error error) {
-	if data.Way == "email" {
-		return signUpWithEmail(data)
-	}
-
-	error = errors.New("注册失败")
-	return
-}
+//func (service *UserService) SignUp(data *SignupForm) (user *user.UserModel, error error) {
+//	error = errors.New("注册失败")
+//	return
+//}
 
 type ResetPassForm struct {
 	Password string `form:"password"`
@@ -253,12 +334,24 @@ func (UserService) ResetPass(form *ResetPassForm) (error error) {
 
 	userauth := new(user.AuthModel)
 
-	if err := db.Model(userauth).Where("account = ?", user.User().Id).Find(userauth).Limit(1).Error; err != nil {
-		fmt.Println(error.Error())
+	if err := db.Model(userauth).Where("account = ?", user.User().Id).First(userauth).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			userauth.Account = user.User().Id
+			userauth.Auth = form.Auth
+
+			if db.Model(&user.AuthModel{}).Create(&userauth).Error != nil {
+				return errors.New("密码更新失败")
+			}
+
+			return
+		}
+
+		log.Println("update password error:", err)
 		error = errors.New("用户信息异常")
 		return
 	}
 
+	fmt.Println("here")
 	if form.Password == userauth.Auth {
 		error = errors.New("新密码与旧密码不能相同")
 		return
@@ -276,6 +369,7 @@ type AttrForm struct {
 	Id    string `form:"id"`
 	Key   string `form:"key"`
 	Value string `form:"value"`
+	Code  string `form:"code"`
 }
 
 func (UserService) UpdateAttr(user *user.UserModel, key string, value interface{}) (error error) {
@@ -518,7 +612,7 @@ func (*UserService) Verified(token string) bool {
 		return false
 	}
 
-	err, u := thisService.FindeByEmail(email)
+	err, u := thisService.FindByEmail(email)
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -633,4 +727,77 @@ func (UserService) SaveIcon2QN(file multipart.File, fileHeader *multipart.FileHe
 
 	url = storage.MakePublicURL(imgHost, ret.Key)
 	return
+}
+
+func (*UserService) SMSCode(account string) string {
+	client := redis.Connect()
+	defer redis.Close(client)
+
+	key := fmt.Sprintf("smscode:%s", account)
+	code, err := client.Get(ctx, key).Result()
+	if err != nil {
+		return ""
+	}
+
+	return code
+}
+
+func (*UserService) SendSMS(account string) bool {
+	if account == "" {
+		return false
+	}
+
+	code := generateSMSCode(account)
+	if code == "" {
+		log.Println("SendSMS Error: generate code failed")
+		return false
+	}
+	conf, error := cfg.Config()
+	if error != nil {
+		fmt.Println(error.Error())
+		return false
+	}
+
+	env := conf.Section("environment").Key("app_mode").String()
+	if env == "production" {
+		sms, err := smsSVC.NewSMSSVC()
+		if err != nil {
+			log.Println("SendSMS Error:", err)
+			return false
+		}
+
+		err = sms.SendCode(code, account)
+		if err != nil {
+			return false
+		}
+	}
+
+	log.Println("send sms code ok:", code)
+	return true
+}
+
+func generateSMSCode(account string) string {
+	client := redis.Connect()
+	defer redis.Close(client)
+
+	key := fmt.Sprintf("smscode:%s", account)
+
+	rand.Seed(time.Now().Unix())
+	codeS := make([]string, 4)
+	for idx := 0; idx < 4; idx++ {
+		codeS = append(codeS, strconv.Itoa(rand.Intn(10)))
+	}
+
+	code := strings.Join(codeS, "")
+
+	if code == "" {
+		return code
+	}
+
+	if err := client.Set(ctx, key, code, 10*60*time.Second).Err(); err != nil {
+		log.Println("code save err:", err)
+		return ""
+	}
+
+	return code
 }
