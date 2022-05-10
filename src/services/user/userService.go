@@ -116,7 +116,7 @@ func signinByAccount(data *SigninForm) (string, error) {
 		userInfo, err = thisService.FindByPhone(data.Account)
 	}
 
-	if err != nil || userInfo.Id == "" {
+	if err != nil || userInfo == nil || userInfo.Id == "" {
 		return "", errors.New("该用户不存在")
 	}
 

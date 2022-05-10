@@ -50,6 +50,7 @@ func (response *Response) SuccessWithFile(file string) {
 		".m4v":  "video/mp4",
 		".flv":  "video/x-flv",
 		".jpg":  "image/jpeg",
+		".jpeg":  "image/jpeg",
 		".png":  "image/png",
 	}
 
